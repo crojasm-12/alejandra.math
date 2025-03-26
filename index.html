@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es"> {/* Changed lang to Spanish */}
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Juego de Multiplicar</title> {/* Changed title */}
+    <title>Juego de Multiplicar con FX</title> {/* Changed title */}
     <style>
         /* Basic Reset & No Scrollbars */
         html, body {
@@ -13,7 +13,7 @@
         }
 
         /* Space Background */
-        body {
+        body { /* ... (styles remain the same) ... */
             background-image:
                 radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.1) 0%, transparent 30%),
                 radial-gradient(circle at 80% 70%, rgba(221, 160, 221, 0.1) 0%, transparent 30%),
@@ -26,10 +26,10 @@
         }
 
         /* UI Elements Styling */
-        #scoreDisplay, #failuresDisplay, #levelDisplay, #newGameButton { /* Added button */
+        #scoreDisplay, #failuresDisplay, #levelDisplay, #newGameButton {
             position: absolute; padding: 10px 15px; border-radius: 8px;
             font-weight: bold; color: #333;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); z-index: 10;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); z-index: 10; /* Ensure UI is above 3D canvas */
             user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
         }
         #scoreDisplay, #failuresDisplay, #levelDisplay { font-size: 1.4em; }
@@ -37,19 +37,28 @@
         #failuresDisplay { top: 55px; left: 10px; background-color: #FFDAC1; }
         #levelDisplay { top: 10px; right: 10px; background-color: #FFAEBC; }
 
-        /* UPDATE 2: New Game Button Styling */
+        /* New Game Button Styling */
         #newGameButton {
             bottom: 10px; right: 10px; background-color: #B4F8C8; /* Mint */
             font-size: 1.1em; border: none; cursor: pointer;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
-         #newGameButton:hover { background-color: #a3e4b3; } /* Slightly darker on hover */
+         #newGameButton:hover { background-color: #a3e4b3; }
 
-        /* Canvas Styling */
-        #gameCanvas {
+        /* Canvas Elements Styling */
+        #gameCanvas, #threeCanvas { /* Added #threeCanvas back */
             display: block; position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
+        }
+        /* 2D Canvas for core game */
+        #gameCanvas {
             z-index: 1; background-color: transparent;
+        }
+        /* 3D Canvas for sad face effect */
+        #threeCanvas {
+            z-index: 2; /* Above game canvas, below UI */
+            pointer-events: none; /* Allow clicks/touches to pass through */
+            background-color: transparent; /* Make it see-through */
         }
     </style>
 </head>
@@ -58,50 +67,132 @@
     <div id="scoreDisplay">Score: 0</div>
     <div id="failuresDisplay">Fallas: 0</div>
     <div id="levelDisplay">Level: 1</div>
-    <!-- UPDATE 2: Added New Game Button -->
     <button id="newGameButton">Nuevo Juego</button>
 
-    <!-- Canvas Element -->
+    <!-- Canvas Elements -->
     <canvas id="gameCanvas"></canvas>
+    <canvas id="threeCanvas"></canvas> <!-- Added canvas for Three.js -->
 
-    <!-- NO Three.js library needed -->
+    <!-- Three.js Library via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- Canvas Setup ---
-            const canvas = document.getElementById('gameCanvas');
+            const canvas = document.getElementById('gameCanvas'); // 2D game canvas
             const ctx = canvas.getContext('2d');
             let canvasWidth = window.innerWidth;
             let canvasHeight = window.innerHeight;
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
 
+            // --- Three.js Setup (Minimal for Sad Face) ---
+            const threeCanvas = document.getElementById('threeCanvas'); // 3D effects canvas
+            let scene, camera, renderer, ambientLight;
+            let sadFaceMesh = null; // Mesh for the sad face
+            let sadFaceActive = false;
+            const clock = new THREE.Clock(); // For animation delta time
+
+            function setupThreeScene() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000);
+                camera.position.z = 50; // Camera distance
+
+                renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true });
+                renderer.setSize(canvasWidth, canvasHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+
+                ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // Make face bright
+                scene.add(ambientLight);
+
+                // Create the sad face mesh but keep it hidden initially
+                sadFaceMesh = createSadFaceMesh();
+                sadFaceMesh.visible = false;
+                scene.add(sadFaceMesh);
+            }
+
+            // Function to create the sad face texture using 2D Canvas
+            function createSadFaceTexture() {
+                const faceCanvas = document.createElement('canvas');
+                const faceCtx = faceCanvas.getContext('2d');
+                const size = 128; // Texture size
+                faceCanvas.width = size;
+                faceCanvas.height = size;
+
+                // Background (optional, transparent is default)
+                // faceCtx.fillStyle = 'rgba(0, 0, 0, 0)';
+                // faceCtx.fillRect(0, 0, size, size);
+
+                // Face Circle
+                faceCtx.fillStyle = '#FFDD67'; // Yellowish
+                faceCtx.beginPath();
+                faceCtx.arc(size / 2, size / 2, size * 0.45, 0, Math.PI * 2);
+                faceCtx.fill();
+                faceCtx.lineWidth = size * 0.03;
+                faceCtx.strokeStyle = '#333';
+                faceCtx.stroke();
+
+
+                // Eyes (simple circles)
+                faceCtx.fillStyle = '#333';
+                faceCtx.beginPath();
+                faceCtx.arc(size * 0.35, size * 0.4, size * 0.06, 0, Math.PI * 2); // Left eye
+                faceCtx.fill();
+                faceCtx.beginPath();
+                faceCtx.arc(size * 0.65, size * 0.4, size * 0.06, 0, Math.PI * 2); // Right eye
+                faceCtx.fill();
+
+                // Sad Mouth (arc)
+                faceCtx.beginPath();
+                faceCtx.arc(size / 2, size * 0.75, size * 0.25, Math.PI * 0.1, Math.PI * 0.9, true); // Draw arc upwards
+                faceCtx.stroke();
+
+
+                return new THREE.CanvasTexture(faceCanvas);
+            }
+
+             // Function to create the sad face mesh
+            function createSadFaceMesh() {
+                 const texture = createSadFaceTexture();
+                 const geometry = new THREE.PlaneGeometry(15, 15); // Size of the face plane in 3D space
+                 // Use MeshBasicMaterial for simple, unlit texture display
+                 const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+                 const mesh = new THREE.Mesh(geometry, material);
+                 return mesh;
+            }
+
+             // Function to map 2D screen coordinates to 3D space
+             function map2Dto3D(x2d, y2d) {
+                const scaleFactor = 0.1; // Adjust this based on camera.position.z and desired size
+                const x3d = (x2d - canvasWidth / 2) * scaleFactor;
+                const y3d = -(y2d - canvasHeight / 2) * scaleFactor;
+                return new THREE.Vector3(x3d, y3d, 0); // Place on Z=0 plane
+            }
+
+
             // --- UI Elements ---
             const scoreElement = document.getElementById('scoreDisplay');
             const failuresElement = document.getElementById('failuresDisplay');
             const levelElement = document.getElementById('levelDisplay');
-            const newGameBtn = document.getElementById('newGameButton'); // UPDATE 2
+            const newGameBtn = document.getElementById('newGameButton');
 
             // --- Game State ---
             let score = 0; let failures = 0; let level = 1;
             const maxLevel = 12;
             let currentProblem = { factor1: 1, factor2: 1 }; let correctAnswer = 1;
-            let gameActive = true;
-            let feedbackTimer = 0; let feedbackType = null;
+            let gameActive = true; // Is core game logic running?
+            let feedbackTimer = 0; let feedbackType = null; // For 2D catcher flash
             let fullscreenRequested = false;
 
             // --- Confetti Effect State ---
             let confettiActive = false; let confettiParticles = [];
             const confettiDuration = 90; let confettiTimer = 0;
 
-            // --- UPDATE 1: Split Explosion State ---
-            let splitExplosionActive = false;
-            let splitPieces = []; // Array to hold the 4 pieces
-            const splitExplosionDuration = 60; // Frames for animation
+            // --- 2D Split Explosion State ---
+            let splitExplosionActive = false; let splitPieces = [];
+            const splitExplosionDuration = 70; // Slightly longer to overlap face more
             let splitExplosionTimer = 0;
-            const gravity = 0.15; // Gravity effect on pieces
-            const damping = 0.99; // Air resistance
-
+            const gravity = 0.15; const damping = 0.99;
 
             // --- Colors ---
             const pastelColors = ['#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFAEBC', '#FFDAC1', '#CDB4DB', '#FFFACD', '#ADD8E6'];
@@ -110,7 +201,7 @@
 
             // --- Player Catcher ---
             const originalBaseWidth = 150; const originalBaseHeight = 100;
-            const playerRect = {
+            const playerRect = { /* ... (same definition) ... */
                 baseWidth: originalBaseWidth * 0.8, baseHeight: originalBaseHeight * 0.8,
                 x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2,
                 y: canvasHeight - (originalBaseHeight * 0.8) - 40,
@@ -118,7 +209,7 @@
                 speed: 8, dx: 0, color: getRandomPastelColor(),
                 gridLineWidth: 1, gridLineColor: 'rgba(50, 50, 50, 0.5)',
                 labelFont: 'bold 14px Arial', labelColor: 'white'
-            };
+             };
 
             // --- Falling Squares ---
             const fallingSquares = []; const squareSize = 60;
@@ -127,49 +218,42 @@
             const requiredSlotWidth = squareSize + minGapBetweenSquares;
 
             // --- Helper Functions ---
-            function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
-            function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
-            function goFullScreen() { /* ... (same as before) ... */
+            function getRandomInt(min, max) { /* ... */ return Math.floor(Math.random() * (max - min + 1)) + min; }
+            function shuffleArray(array) { /* ... */ for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+            function isMobileDevice() { /* ... */ return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
+            function goFullScreen() { /* ... */
                  const element = document.documentElement;
                 if (element.requestFullscreen) element.requestFullscreen();
                 else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
                 else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
                 else if (element.msRequestFullscreen) element.msRequestFullscreen();
                 fullscreenRequested = true;
-             }
+            }
 
             // --- Input Handling ---
             const keys = { ArrowLeft: false, ArrowRight: false };
             let isTouching = false; let touchX = 0;
             window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
             window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-            function handleTouchMove(clientX) { /* ... (same as before) ... */
-                 let newRectX = clientX - playerRect.width / 2;
-                playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width));
-             }
-            canvas.addEventListener('touchstart', (e) => { /* ... (same as before) ... */
-                 e.preventDefault();
-                if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); }
+            function handleTouchMove(clientX) { /* ... */ let newRectX = clientX - playerRect.width / 2; playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); }
+            canvas.addEventListener('touchstart', (e) => { /* ... */
+                e.preventDefault(); if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); }
                 if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); }
             }, { passive: false });
-             canvas.addEventListener('touchmove', (e) => { /* ... (same as before) ... */
-                 e.preventDefault();
-                if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); }
+            canvas.addEventListener('touchmove', (e) => { /* ... */
+                 e.preventDefault(); if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); }
             }, { passive: false });
             canvas.addEventListener('touchend', () => { isTouching = false; });
             canvas.addEventListener('touchcancel', () => { isTouching = false; });
-
-            // UPDATE 2: Add listener for New Game button
-            newGameBtn.addEventListener('click', resetGame);
+            newGameBtn.addEventListener('click', resetGame); // Button listener confirmed
 
             // --- Game Logic ---
-            function generateNewProblem() { /* ... (same as before) ... */
-                currentProblem.factor1 = getRandomInt(1, 9); currentProblem.factor2 = getRandomInt(1, 9);
+            function generateNewProblem() { /* ... (same) ... */
+                 currentProblem.factor1 = getRandomInt(1, 9); currentProblem.factor2 = getRandomInt(1, 9);
                 correctAnswer = currentProblem.factor1 * currentProblem.factor2;
                 playerRect.color = getRandomPastelColor();
              }
-            function generateFallingSquares() { /* ... (same as before) ... */
+            function generateFallingSquares() { /* ... (same) ... */
                 fallingSquares.length = 0;
                 let numberOfSquares = 5 + Math.floor(level / 2);
                 const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement;
@@ -227,356 +311,223 @@
                     });
                 }
                 incorrectArray.length = 0;
-             }
+            }
 
             function startNewRound() {
                 gameActive = true;
-                splitExplosionActive = false; // Ensure explosion off
-                splitPieces.length = 0; // Clear pieces
-                confettiActive = false; // Ensure confetti off
-                confettiParticles.length = 0; // Clear confetti
+                splitExplosionActive = false; splitPieces.length = 0;
+                confettiActive = false; confettiParticles.length = 0;
+                sadFaceActive = false; // Ensure face is inactive
+                if (sadFaceMesh) sadFaceMesh.visible = false; // Hide 3D face
                 feedbackType = null; feedbackTimer = 0;
 
                 generateNewProblem();
                 playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
-                // Ensure catcher is centered if needed (or rely on last position)
-                // playerRect.x = canvasWidth / 2 - playerRect.width / 2;
                 generateFallingSquares();
                 updateUI();
             }
 
             function restartAttemptInternal() {
-                gameActive = true; // Re-enable game logic AFTER explosion
-                splitExplosionActive = false; // Reset explosion state
-                splitPieces.length = 0; // Clear pieces array
+                gameActive = true;
+                splitExplosionActive = false; splitPieces.length = 0;
+                sadFaceActive = false; // Ensure face is inactive
+                if (sadFaceMesh) sadFaceMesh.visible = false; // Hide 3D face
 
-                // Regenerate squares for the SAME problem
                 playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
                 generateFallingSquares();
                 updateUI();
             }
 
-            // UPDATE 1 & 2: Incorrect catch triggers 2D split explosion
+            // Modified: Trigger BOTH 2D explosion AND 3D sad face
             function triggerIncorrectCatchSequence(collidedSquare) {
-                gameActive = false; // PAUSE game logic immediately
-                failures++;
-                updateUI();
-
-                if (collidedSquare) { collidedSquare.color = failureColor; } // Make 2D square red
-
-                feedbackType = 'incorrect'; // For red flash at catcher's original spot
-                feedbackTimer = 40; // Duration for the 2D flash
+                gameActive = false; // PAUSE core game logic
+                failures++; updateUI();
+                if (collidedSquare) { collidedSquare.color = failureColor; }
+                feedbackType = 'incorrect'; feedbackTimer = 40;
 
                 // --- Trigger 2D Split Explosion ---
-                splitExplosionActive = true;
-                splitExplosionTimer = 0;
-                createSplitPieces(); // Create the 4 pieces
-                // restartAttemptInternal() is called when the split explosion finishes in gameLoop
+                splitExplosionActive = true; splitExplosionTimer = 0;
+                createSplitPieces();
+
+                // --- Trigger 3D Sad Face ---
+                if (sadFaceMesh) {
+                    // Position face roughly above where the catcher was
+                    const facePos3D = map2Dto3D(playerRect.x + playerRect.width / 2, playerRect.y - playerRect.height*0.5); // Position slightly above catcher
+                    sadFaceMesh.position.copy(facePos3D);
+                    sadFaceMesh.rotation.z = 0; // Reset rotation
+                    sadFaceMesh.scale.set(1, 1, 1); // Reset scale
+                    sadFaceMesh.visible = true;
+                    sadFaceActive = true;
+                    animateThree(); // Ensure 3D loop is running
+                }
+                // restartAttemptInternal() is called when 2D explosion finishes
             }
 
-            function triggerLevelUpConfetti() { /* ... (same as before) ... */
-                 confettiActive = true;
-                confettiTimer = confettiDuration;
-                createConfettiBurst();
+            function triggerLevelUpConfetti() { /* ... (same) ... */
+                 confettiActive = true; confettiTimer = confettiDuration; createConfettiBurst();
             }
-
-            function updateUI() { /* ... (same as before) ... */
-                 scoreElement.textContent = `Score: ${score}`;
-                failuresElement.textContent = `Fallas: ${failures}`;
-                levelElement.textContent = `Level: ${level}`;
-             }
-
-             // UPDATE 2: Reset Game Function
-             function resetGame() {
+            function updateUI() { /* ... (same) ... */
+                scoreElement.textContent = `Score: ${score}`; failuresElement.textContent = `Fallas: ${failures}`; levelElement.textContent = `Level: ${level}`;
+            }
+            function resetGame() { /* ... (same, includes resetting sadFaceActive and hiding mesh) ... */
                 console.log("Resetting game...");
-                // Reset core variables
-                score = 0;
-                failures = 0;
-                level = 1;
-                fullscreenRequested = false; // Allow fullscreen request again
-
-                // Stop any ongoing animations/effects
-                splitExplosionActive = false;
-                splitPieces.length = 0;
-                confettiActive = false;
-                confettiParticles.length = 0;
-                feedbackTimer = 0;
-                feedbackType = null;
-                fallingSquares.length = 0; // Clear existing squares immediately
-
-                // Reset player position (optional, startNewRound might handle it)
+                score = 0; failures = 0; level = 1; fullscreenRequested = false;
+                splitExplosionActive = false; splitPieces.length = 0;
+                confettiActive = false; confettiParticles.length = 0;
+                sadFaceActive = false; if (sadFaceMesh) sadFaceMesh.visible = false; // Hide face on reset
+                feedbackTimer = 0; feedbackType = null;
+                fallingSquares.length = 0;
                 playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                gameActive = true;
+                startNewRound();
+            }
 
-                // Start a fresh round
-                gameActive = true; // Make sure game is active before starting
-                startNewRound(); // This generates problem, squares, and updates UI
-             }
-
-
-            // --- Drawing Functions (2D Canvas) ---
-            function drawBottomRectangle() {
-                // Don't draw the normal catcher if the split explosion is active
+            // --- 2D Drawing Functions ---
+            function drawBottomRectangle() { /* ... (same, returns if splitExplosionActive) ... */
                 if (splitExplosionActive) return;
-
-                const rectX = playerRect.x; const rectY = playerRect.y;
-                const rectW = playerRect.width; const rectH = playerRect.height;
-
-                // Draw Catcher (same as before)
-                ctx.fillStyle = playerRect.color; ctx.fillRect(rectX, rectY, rectW, rectH);
-                ctx.strokeStyle = playerRect.gridLineColor; ctx.lineWidth = playerRect.gridLineWidth * 2;
-                ctx.strokeRect(rectX, rectY, rectW, rectH);
-                const cellWidth = rectW / currentProblem.factor1; const cellHeight = rectH / currentProblem.factor2;
-                ctx.lineWidth = playerRect.gridLineWidth; ctx.strokeStyle = playerRect.gridLineColor;
+                const rectX = playerRect.x; const rectY = playerRect.y; const rectW = playerRect.width; const rectH = playerRect.height;
+                ctx.fillStyle = playerRect.color; ctx.fillRect(rectX, rectY, rectW, rectH); ctx.strokeStyle = playerRect.gridLineColor; ctx.lineWidth = playerRect.gridLineWidth * 2; ctx.strokeRect(rectX, rectY, rectW, rectH); const cellWidth = rectW / currentProblem.factor1; const cellHeight = rectH / currentProblem.factor2; ctx.lineWidth = playerRect.gridLineWidth; ctx.strokeStyle = playerRect.gridLineColor;
                 for (let i = 1; i < currentProblem.factor1; i++) { ctx.beginPath(); ctx.moveTo(rectX + i * cellWidth, rectY); ctx.lineTo(rectX + i * cellWidth, rectY + rectH); ctx.stroke(); }
                 for (let j = 1; j < currentProblem.factor2; j++) { ctx.beginPath(); ctx.moveTo(rectX, rectY + j * cellHeight); ctx.lineTo(rectX + rectW, rectY + j * cellHeight); ctx.stroke(); }
-                ctx.fillStyle = playerRect.labelColor; ctx.font = playerRect.labelFont;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-                ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5);
-                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-                ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
-
-                // Draw 2D feedback flash (red or white)
-                if (feedbackTimer > 0) { /* ... (same as before) ... */
-                     ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7); // Fade out
-                    if (feedbackType === 'incorrect') { ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; }
-                    else if (feedbackType === 'correct') { ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; }
-                    ctx.fillRect(rectX, rectY, rectW, rectH);
-                    ctx.globalAlpha = 1.0;
-                 }
+                ctx.fillStyle = playerRect.labelColor; ctx.font = playerRect.labelFont; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
+                if (feedbackTimer > 0) { ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7); if (feedbackType === 'incorrect') { ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; } else if (feedbackType === 'correct') { ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; } ctx.fillRect(rectX, rectY, rectW, rectH); ctx.globalAlpha = 1.0; }
             }
-
-            function drawFallingSquares() {
-                // Draw squares if game is active OR if the split explosion is active
-                // (to keep the collided red square visible during explosion)
+            function drawFallingSquares() { /* ... (same, draws if gameActive or splitExplosionActive) ... */
                  if (!gameActive && !splitExplosionActive) return;
-
-                fallingSquares.forEach(square => {
-                    ctx.fillStyle = square.color; // Color might be red
-                    ctx.fillRect(square.x, square.y, square.size, square.size);
-                    ctx.fillStyle = '#333'; ctx.font = `bold ${square.size * 0.45}px Arial`;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
-                });
-            }
-
-            function createConfettiBurst() { /* ... (same as before) ... */
-                 const burstAmount = 100;
-                confettiParticles.length = 0; // Clear previous confetti
-                for (let i = 0; i < burstAmount; i++) {
-                    confettiParticles.push({
-                        x: Math.random() * canvasWidth,
-                        y: -Math.random() * canvasHeight * 0.2,
-                        vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3 + 2,
-                        color: getRandomPastelColor(), size: Math.random() * 8 + 4,
-                        angle: Math.random() * Math.PI * 2,
-                        angularVelocity: (Math.random() - 0.5) * 0.1, life: 1.0
-                    });
-                }
-             }
-            function updateAndDrawConfetti(deltaTime) { /* ... (same as before) ... */
-                 if (confettiParticles.length === 0) return; // More efficient check
-
-                const decayRate = deltaTime / (confettiDuration / 60); // Approx decay per frame time
-
-                for (let i = confettiParticles.length - 1; i >= 0; i--) {
-                    const p = confettiParticles[i];
-                    p.x += p.vx * deltaTime * 60; // Adjust velocity by normalized frame time
-                    p.y += p.vy * deltaTime * 60;
-                    p.vy += gravity * deltaTime * 60; // Use defined gravity
-                    p.angle += p.angularVelocity * deltaTime * 60;
-                    p.life -= decayRate;
-
-                    if (p.life <= 0 || p.y > canvasHeight + p.size) { // Check slightly below screen
-                        confettiParticles.splice(i, 1);
-                    } else {
-                        ctx.save();
-                        ctx.translate(p.x, p.y);
-                        ctx.rotate(p.angle);
-                        ctx.fillStyle = p.color;
-                        ctx.globalAlpha = Math.max(0, p.life); // Ensure alpha isn't negative
-                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                        ctx.restore();
-                    }
-                }
-                ctx.globalAlpha = 1.0; // Reset alpha
-             }
-
-
-            // --- UPDATE 1: Split Explosion Logic ---
-            function createSplitPieces() {
-                splitPieces = []; // Clear previous pieces
-                const pieceW = playerRect.width / 2;
-                const pieceH = playerRect.height / 2;
-                const originX = playerRect.x;
-                const originY = playerRect.y;
-                const baseSpeed = 5; // Base speed multiplier
-
-                const positions = [
-                    { x: originX, y: originY },         // Top-Left
-                    { x: originX + pieceW, y: originY }, // Top-Right
-                    { x: originX, y: originY + pieceH }, // Bottom-Left
-                    { x: originX + pieceW, y: originY + pieceH } // Bottom-Right
-                ];
-
-                positions.forEach((pos, index) => {
-                    // Calculate velocity direction roughly away from center
-                    const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2);
-                    const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2);
-                    const angle = Math.atan2(centerOffsetY, centerOffsetX);
-
-                    const speed = baseSpeed + Math.random() * 3; // Randomize speed slightly
-
-                    splitPieces.push({
-                        x: pos.x, y: pos.y,
-                        w: pieceW, h: pieceH,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed - Math.random() * 3, // Add some upward randomness
-                        rotation: 0,
-                        rotationSpeed: (Math.random() - 0.5) * 0.15, // Random rotation
-                        color: playerRect.color // Use the catcher's color
-                    });
-                });
-            }
-
-            function updateSplitExplosion(deltaTime) {
-                 if (!splitExplosionActive) return;
-
-                 splitExplosionTimer++;
-                 const timeFactor = deltaTime * 60; // Normalize calculations to ~60fps
-
-                 for (let i = splitPieces.length - 1; i >= 0; i--) {
-                     const piece = splitPieces[i];
-                     piece.x += piece.vx * timeFactor;
-                     piece.y += piece.vy * timeFactor;
-                     piece.vy += gravity * timeFactor; // Apply gravity
-                     piece.vx *= damping; // Apply air resistance
-                     piece.vy *= damping;
-                     piece.rotation += piece.rotationSpeed * timeFactor;
-
-                     // Optional: Remove pieces far off-screen to save processing
-                     if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) {
-                         splitPieces.splice(i, 1);
-                     }
-                 }
-
-                 // Check if animation duration is over AND pieces are gone (or just duration)
-                 if (splitExplosionTimer >= splitExplosionDuration) {
-                     splitExplosionActive = false;
-                     splitExplosionTimer = 0;
-                     splitPieces.length = 0; // Ensure pieces are cleared
-                     restartAttemptInternal(); // Restart the game attempt
-                 }
-            }
-
-            function drawSplitExplosion() {
-                 if (!splitExplosionActive) return;
-
-                 splitPieces.forEach(piece => {
-                     ctx.save();
-                     // Translate to the center of the piece for rotation
-                     ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
-                     ctx.rotate(piece.rotation);
-                     ctx.fillStyle = piece.color;
-                     // Draw the piece centered around the origin
-                     ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
-                     ctx.restore();
+                 fallingSquares.forEach(square => {
+                     ctx.fillStyle = square.color; ctx.fillRect(square.x, square.y, square.size, square.size);
+                     ctx.fillStyle = '#333'; ctx.font = `bold ${square.size * 0.45}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                     ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
                  });
+             }
+            function createConfettiBurst() { /* ... (same) ... */
+                 const burstAmount = 100; confettiParticles.length = 0;
+                for (let i = 0; i < burstAmount; i++) { confettiParticles.push({ x: Math.random() * canvasWidth, y: -Math.random() * canvasHeight * 0.2, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3 + 2, color: getRandomPastelColor(), size: Math.random() * 8 + 4, angle: Math.random() * Math.PI * 2, angularVelocity: (Math.random() - 0.5) * 0.1, life: 1.0 }); }
             }
+            function updateAndDrawConfetti(dt) { /* ... (same) ... */
+                 if (confettiParticles.length === 0) return;
+                const decayRate = dt / (confettiDuration / 60);
+                for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                    const p = confettiParticles[i]; p.x += p.vx * dt * 60; p.y += p.vy * dt * 60; p.vy += gravity * dt * 60; p.angle += p.angularVelocity * dt * 60; p.life -= decayRate;
+                    if (p.life <= 0 || p.y > canvasHeight + p.size) { confettiParticles.splice(i, 1); }
+                    else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle); ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, p.life); ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); ctx.restore(); }
+                } ctx.globalAlpha = 1.0;
+             }
+
+            // --- 2D Split Explosion Logic ---
+            function createSplitPieces() { /* ... (same) ... */
+                 splitPieces = []; const pieceW = playerRect.width / 2; const pieceH = playerRect.height / 2; const originX = playerRect.x; const originY = playerRect.y; const baseSpeed = 5;
+                const positions = [{ x: originX, y: originY }, { x: originX + pieceW, y: originY }, { x: originX, y: originY + pieceH }, { x: originX + pieceW, y: originY + pieceH }];
+                positions.forEach((pos, index) => { const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2); const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2); const angle = Math.atan2(centerOffsetY, centerOffsetX); const speed = baseSpeed + Math.random() * 3; splitPieces.push({ x: pos.x, y: pos.y, w: pieceW, h: pieceH, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - Math.random() * 3, rotation: 0, rotationSpeed: (Math.random() - 0.5) * 0.15, color: playerRect.color }); });
+             }
+            function updateSplitExplosion(dt) { /* ... (same, calls restartAttemptInternal at end) ... */
+                 if (!splitExplosionActive) return;
+                 splitExplosionTimer++; const timeFactor = dt * 60;
+                 for (let i = splitPieces.length - 1; i >= 0; i--) { const piece = splitPieces[i]; piece.x += piece.vx * timeFactor; piece.y += piece.vy * timeFactor; piece.vy += gravity * timeFactor; piece.vx *= damping; piece.vy *= damping; piece.rotation += piece.rotationSpeed * timeFactor; if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) { splitPieces.splice(i, 1); } }
+                 if (splitExplosionTimer >= splitExplosionDuration) { splitExplosionActive = false; splitExplosionTimer = 0; splitPieces.length = 0; restartAttemptInternal(); /* Also hide sad face? No, let 3D loop handle it */ }
+             }
+            function drawSplitExplosion() { /* ... (same) ... */
+                 if (!splitExplosionActive) return;
+                 splitPieces.forEach(piece => { ctx.save(); ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2); ctx.rotate(piece.rotation); ctx.fillStyle = piece.color; ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h); ctx.restore(); });
+             }
 
             // --- Update & Collision (2D) ---
-            function handlePlayerMovement() { /* ... (same as before, checks gameActive) ... */
-                 if (!gameActive) return;
-                if (!isTouching) {
-                    playerRect.dx = 0;
-                    if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
-                    if (keys.ArrowRight) playerRect.dx = playerRect.speed;
-                    let newX = playerRect.x + playerRect.dx;
-                    playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width));
-                } else { playerRect.dx = 0; }
-            }
-            function updateFallingSquares() { /* ... (same as before, checks gameActive) ... */
-                 if (!gameActive) return;
-                for (let i = fallingSquares.length - 1; i >= 0; i--) {
-                    const square = fallingSquares[i]; square.y += square.speed;
-                    if (square.y > canvasHeight) { fallingSquares.splice(i, 1); }
-                }
+            function handlePlayerMovement() { /* ... (same) ... */
+                 if (!gameActive) return; if (!isTouching) { playerRect.dx = 0; if (keys.ArrowLeft) playerRect.dx = -playerRect.speed; if (keys.ArrowRight) playerRect.dx = playerRect.speed; let newX = playerRect.x + playerRect.dx; playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width)); } else { playerRect.dx = 0; }
              }
-            function checkCollisions() { /* ... (same as before, checks gameActive) ... */
+            function updateFallingSquares() { /* ... (same) ... */
+                if (!gameActive) return; for (let i = fallingSquares.length - 1; i >= 0; i--) { const square = fallingSquares[i]; square.y += square.speed; if (square.y > canvasHeight) { fallingSquares.splice(i, 1); } }
+             }
+            function checkCollisions() { /* ... (same logic, calls triggerLevelUpConfetti & triggerIncorrectCatchSequence) ... */
                  if (!gameActive) return;
                 for (let i = fallingSquares.length - 1; i >= 0; i--) {
-                    if (!fallingSquares[i]) continue;
-                    const square = fallingSquares[i]; const squareBottom = square.y + square.size;
-                    const squareTop = square.y; const squareLeft = square.x;
-                    const squareRight = square.x + square.size; const rectTop = playerRect.y;
-                    const rectLeft = playerRect.x; const rectRight = playerRect.x + playerRect.width;
-                    const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
-
+                    if (!fallingSquares[i]) continue; const square = fallingSquares[i]; const squareBottom = square.y + square.size; const squareTop = square.y; const squareLeft = square.x; const squareRight = square.x + square.size; const rectTop = playerRect.y; const rectLeft = playerRect.x; const rectRight = playerRect.x + playerRect.width; const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
                     if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && squareRight > rectLeft && squareLeft < rectRight) {
-                        if (square.isCorrect) {
-                            score++; let levelIncreased = false;
-                            if (score > 0 && score % 5 === 0 && level < maxLevel) { level++; levelIncreased = true; }
-                            feedbackType = 'correct'; feedbackTimer = 15;
-                            if (levelIncreased) { triggerLevelUpConfetti(); } // Trigger confetti *before* new round starts
-                            startNewRound(); // Start next round
-                            return;
-                        } else {
-                            triggerIncorrectCatchSequence(square);
-                            return;
-                        }
+                        if (square.isCorrect) { score++; let levelIncreased = false; if (score > 0 && score % 5 === 0 && level < maxLevel) { level++; levelIncreased = true; } feedbackType = 'correct'; feedbackTimer = 15; if (levelIncreased) { triggerLevelUpConfetti(); } startNewRound(); return; }
+                        else { triggerIncorrectCatchSequence(square); return; }
                     }
                 }
              }
 
-             // --- Main Animation Loop ---
-             let lastTime = 0;
-             function gameLoop(timestamp) {
-                const deltaTime = (timestamp - lastTime) / 1000; // Delta time in seconds
+            // --- 3D Sad Face Animation ---
+             function updateSadFace(dt) {
+                 if (!sadFaceActive || !sadFaceMesh) return;
+
+                 // Simple animation: wobble side to side and maybe fade slightly
+                 const wobbleSpeed = 3;
+                 const wobbleAmount = 0.5;
+                 sadFaceMesh.rotation.z = Math.sin(clock.elapsedTime * wobbleSpeed) * wobbleAmount;
+
+                 // Optional: Fade out towards the end of the 2D explosion
+                 const fadeStart = splitExplosionDuration * 0.6; // Start fading after 60% of explosion
+                 if (splitExplosionTimer > fadeStart) {
+                     const fadeDuration = splitExplosionDuration - fadeStart;
+                     const fadeProgress = (splitExplosionTimer - fadeStart) / fadeDuration;
+                     sadFaceMesh.material.opacity = Math.max(0, 1.0 - fadeProgress);
+                 } else {
+                     sadFaceMesh.material.opacity = 1.0; // Ensure fully visible before fading
+                 }
+
+                 // Note: Sad face hiding is handled by restartAttemptInternal or resetGame now
+             }
+
+
+            // --- Main Animation Loops ---
+            let lastTime = 0;
+            let threeAnimFrameId = null;
+
+            function gameLoop(timestamp) { // 2D Canvas Loop
+                const dt = Math.min((timestamp - lastTime) / 1000, 1/20); // Delta time in seconds, capped
                 lastTime = timestamp;
-                // Clamp delta time to avoid large jumps if tab loses focus
-                const dt = Math.min(deltaTime, 1/20); // Max delta = 1/20th sec (50ms)
 
                 // --- Update Game State ---
-                handlePlayerMovement(); // Moves player if gameActive
-                updateFallingSquares(); // Moves squares if gameActive
-                checkCollisions();      // Checks collisions if gameActive
-                updateSplitExplosion(dt); // Update explosion animation if active
-                // Update Confetti State (done within draw function now)
-                // Update 2D Feedback Timer
+                handlePlayerMovement(); updateFallingSquares(); checkCollisions();
+                updateSplitExplosion(dt); // Update 2D explosion
+                // Update Confetti (handled in draw)
                 if (feedbackTimer > 0) { feedbackTimer -= dt * 60; if (feedbackTimer <= 0) { feedbackType = null; } }
 
-                // --- Draw ALL Elements ---
-                ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear 2D canvas
-                drawBottomRectangle(); // Draws catcher only if !splitExplosionActive
-                drawFallingSquares();  // Draws squares if gameActive or splitExplosionActive
-                drawSplitExplosion();  // Draws exploding pieces if active
-                updateAndDrawConfetti(dt); // Update and draw confetti particles
+                // --- Draw 2D Elements ---
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawBottomRectangle(); drawFallingSquares(); drawSplitExplosion();
+                updateAndDrawConfetti(dt);
 
-                // --- Request Next Frame ---
                 requestAnimationFrame(gameLoop);
             }
 
+             function animateThree() { // 3D Canvas Loop
+                // Run only if sad face is active
+                if (!sadFaceActive) { threeAnimFrameId = null; return; }
+
+                threeAnimFrameId = requestAnimationFrame(animateThree);
+                const dt = clock.getDelta(); // Use Three.js clock for its loop
+
+                updateSadFace(dt); // Update 3D face animation
+                renderer.render(scene, camera); // Render 3D scene
+            }
 
             // --- Initialization ---
             function init() {
-                // Initial player position setup is now inside resetGame or startNewRound logic
+                setupThreeScene(); // Init 3D elements
+
                 window.addEventListener('resize', () => {
                      canvasWidth = window.innerWidth; canvasHeight = window.innerHeight;
-                     canvas.width = canvasWidth; canvas.height = canvasHeight;
-                     // Recalculate player position based on new size
-                     playerRect.y = canvasHeight - playerRect.baseHeight - 40;
-                     playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-                     // If resizing during explosion, simply restarting might be best
-                     if (splitExplosionActive) {
-                         resetGame(); // Or just restartAttemptInternal() if you want to keep the state
-                     } else if (gameActive) {
-                        // Maybe just recenter player and let existing squares fall?
-                        // For simplicity, let's restart the current attempt on resize
-                         restartAttemptInternal();
+                     canvas.width = canvasWidth; canvas.height = canvasHeight; // Resize 2D
+                     // Resize 3D
+                     if (camera && renderer) {
+                        camera.aspect = canvasWidth / canvasHeight; camera.updateProjectionMatrix();
+                        renderer.setSize(canvasWidth, canvasHeight); renderer.setPixelRatio(window.devicePixelRatio);
                      }
+                     // Recalculate player pos
+                     playerRect.y = canvasHeight - playerRect.baseHeight - 40; playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                     // Handle reset/restart on resize
+                     if (splitExplosionActive || sadFaceActive) { resetGame(); }
+                     else if (gameActive) { restartAttemptInternal(); }
                 });
-                resetGame(); // Start the game initially using the reset function
-                lastTime = performance.now(); // Initialize lastTime for delta time calculation
-                gameLoop(lastTime); // Start the main loop
+
+                resetGame(); // Initial game setup
+                lastTime = performance.now();
+                gameLoop(lastTime); // Start 2D loop
+                // animateThree() is started by triggerIncorrectCatchSequence when needed
             }
 
             // --- Start ---
