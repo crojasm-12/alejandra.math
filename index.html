@@ -107,20 +107,14 @@
             const maxLevel = 10;
             let currentProblem = { factor1: 1, factor2: 1 };
             let correctAnswer = 1;
-            let gameActive = true; // To pause during transitions/feedback
-            let feedbackTimer = 0; // Timer for showing feedback flashes
-            let feedbackType = null; // 'correct' or 'incorrect'
+            let gameActive = true;
+            let feedbackTimer = 0;
+            let feedbackType = null;
 
             // --- Pastel Colors ---
             const pastelColors = [
-                '#A0E7E5', // Cyan
-                '#B4F8C8', // Mint
-                '#FBE7C6', // Beige
-                '#FFAEBC', // Pink
-                '#FFDAC1', // Peach
-                '#CDB4DB', // Lavender
-                '#FFFACD', // Lemon Chiffon
-                '#ADD8E6', // Light Blue
+                '#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFAEBC',
+                '#FFDAC1', '#CDB4DB', '#FFFACD', '#ADD8E6',
             ];
 
             function getRandomPastelColor() {
@@ -128,22 +122,21 @@
             }
 
             // --- Player Controlled Rectangle ---
-            // UPDATE 1: Reduce base size by 20% (80% of original)
             const originalBaseWidth = 150;
             const originalBaseHeight = 100;
             const playerRect = {
-                baseWidth: originalBaseWidth * 0.8,   // Now 120
-                baseHeight: originalBaseHeight * 0.8,  // Now 80
-                x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2, // Initial horizontal center
-                y: canvasHeight - (originalBaseHeight * 0.8) - 40, // Position near bottom, same offset
-                width: originalBaseWidth * 0.8,   // Actual drawing width
-                height: originalBaseHeight * 0.8, // Actual drawing height
-                speed: 8, // Keyboard speed
-                dx: 0, // Horizontal velocity (for keyboard)
+                baseWidth: originalBaseWidth * 0.8,   // 120
+                baseHeight: originalBaseHeight * 0.8,  // 80
+                x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2,
+                y: canvasHeight - (originalBaseHeight * 0.8) - 40,
+                width: originalBaseWidth * 0.8,
+                height: originalBaseHeight * 0.8,
+                speed: 8,
+                dx: 0,
                 color: getRandomPastelColor(),
                 gridLineWidth: 1,
                 gridLineColor: 'rgba(50, 50, 50, 0.5)',
-                labelFont: 'bold 14px Arial', // Slightly smaller font for smaller rect
+                labelFont: 'bold 14px Arial',
                 labelColor: 'white'
             };
 
@@ -152,99 +145,71 @@
             const squareSize = 60;
             const baseFallSpeed = 1;
             const speedIncrement = 0.3;
-            const minHorizontalSpacing = squareSize * 1.1;
+             // UPDATE 1 & 2: Define required space for placement
+            const minGapBetweenSquares = playerRect.baseWidth; // Ensure catcher fits between
+            const requiredSlotWidth = squareSize + minGapBetweenSquares; // Total width needed per square slot
 
             // --- Input Handling ---
-            // Keyboard
-            const keys = {
-                ArrowLeft: false,
-                ArrowRight: false
-            };
-            window.addEventListener('keydown', (e) => {
-                if (keys.hasOwnProperty(e.key)) {
-                    keys[e.key] = true;
-                }
-            });
-            window.addEventListener('keyup', (e) => {
-                 if (keys.hasOwnProperty(e.key)) {
-                    keys[e.key] = false;
-                }
-            });
-
-            // UPDATE 2: Touch Controls
+            const keys = { ArrowLeft: false, ArrowRight: false };
             let isTouching = false;
-            let touchX = 0; // Store the latest touch X position
+            let touchX = 0;
 
-             // Function to handle touch position update
+            window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+            window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+
             function handleTouchMove(clientX) {
-                // Map the touch X directly to the center of the rectangle
                 let targetRectCenterX = clientX;
-
-                // Calculate the desired rect.x based on the target center
                 let newRectX = targetRectCenterX - playerRect.width / 2;
-
-                // Apply boundary constraints
-                if (newRectX < 0) {
-                    newRectX = 0;
-                }
-                if (newRectX + playerRect.width > canvasWidth) {
-                    newRectX = canvasWidth - playerRect.width;
-                }
+                newRectX = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); // Clamp within bounds
                 playerRect.x = newRectX;
             }
 
             canvas.addEventListener('touchstart', (e) => {
-                // Prevent default scroll/zoom behavior
                 e.preventDefault();
                 if (e.touches.length > 0) {
                     isTouching = true;
-                    touchX = e.touches[0].clientX; // Get X of the first touch point
-                    handleTouchMove(touchX); // Move immediately on touch start
+                    touchX = e.touches[0].clientX;
+                    handleTouchMove(touchX);
                 }
-            }, { passive: false }); // Need passive: false to call preventDefault
+            }, { passive: false });
 
             canvas.addEventListener('touchmove', (e) => {
-                 // Prevent default scroll/zoom behavior
                 e.preventDefault();
                 if (isTouching && e.touches.length > 0) {
                     touchX = e.touches[0].clientX;
-                    handleTouchMove(touchX); // Update position on move
+                    handleTouchMove(touchX);
                 }
-            }, { passive: false }); // Need passive: false to call preventDefault
+            }, { passive: false });
 
-            canvas.addEventListener('touchend', (e) => {
-                // Allow default behavior if needed after touch ends
-                // e.preventDefault(); // Usually not needed on touchend
-                if (isTouching) {
-                    isTouching = false;
-                }
-            });
-
-            canvas.addEventListener('touchcancel', (e) => {
-                // Handle cases where the touch is interrupted (e.g., browser UI)
-                 if (isTouching) {
-                    isTouching = false;
-                }
-            });
-
+            canvas.addEventListener('touchend', () => { isTouching = false; });
+            canvas.addEventListener('touchcancel', () => { isTouching = false; });
 
             // --- Helper Functions ---
             function getRandomInt(min, max) {
                 return Math.floor(Math.random() * (max - min + 1)) + min;
             }
 
+             // Function to shuffle an array (Fisher-Yates algorithm)
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+                }
+            }
+
+
             // --- Game Logic Functions ---
 
             function generateNewProblem() {
-                currentProblem.factor1 = getRandomInt(1, 9); // Columns
-                currentProblem.factor2 = getRandomInt(1, 9); // Rows
+                currentProblem.factor1 = getRandomInt(1, 9);
+                currentProblem.factor2 = getRandomInt(1, 9);
                 correctAnswer = currentProblem.factor1 * currentProblem.factor2;
-                playerRect.color = getRandomPastelColor(); // New color for the rectangle
+                playerRect.color = getRandomPastelColor();
             }
 
             function generateFallingSquares() {
-                fallingSquares.length = 0; // Clear existing squares
-                const numberOfSquares = 5 + Math.floor(level / 2);
+                fallingSquares.length = 0;
+                let numberOfSquares = 5 + Math.floor(level / 2);
                 const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement;
                 const correctSquareIndex = getRandomInt(0, numberOfSquares - 1);
                 const incorrectAnswers = new Set();
@@ -252,8 +217,8 @@
                 while (incorrectAnswers.size < numberOfSquares - 1) {
                     let incorrect;
                     if (Math.random() < 0.6 && correctAnswer > 1) {
-                         incorrect = correctAnswer + getRandomInt(-Math.min(correctAnswer -1 , 5), 5);
-                         if (incorrect === correctAnswer) incorrect++;
+                        incorrect = correctAnswer + getRandomInt(-Math.min(correctAnswer - 1, 5), 5);
+                        if (incorrect === correctAnswer) incorrect++;
                     } else {
                         incorrect = getRandomInt(1, 9) * getRandomInt(1, 9);
                     }
@@ -262,64 +227,87 @@
                     }
                 }
                 const incorrectArray = Array.from(incorrectAnswers);
-                const generatedXPositions = [];
+
+
+                // UPDATE 1 & 2: Implement Slot-based Placement
+                const maxNumberOfSlots = Math.floor(canvasWidth / requiredSlotWidth);
+
+                // Ensure we don't try to place more squares than available slots
+                if (numberOfSquares > maxNumberOfSlots) {
+                    // console.warn(`Reducing number of squares from ${numberOfSquares} to ${maxNumberOfSlots} due to screen width.`);
+                    numberOfSquares = maxNumberOfSlots;
+                    // Make sure the correct answer is still included if squares were reduced
+                    if (correctSquareIndex >= numberOfSquares) {
+                        // Simple fix: swap the last incorrect number with the correct one
+                        // (More robust would be to regenerate incorrect numbers if needed)
+                        if (incorrectArray.length > 0) {
+                           incorrectArray[incorrectArray.length - 1] = correctAnswer;
+                        } else {
+                            // Extremely unlikely edge case: only 1 square possible, must be correct
+                             numberOfSquares = 1;
+                             // Correct answer is already set
+                        }
+                    }
+                }
+
+                if (numberOfSquares <= 0) return; // Should not happen with calculation, but safety check
+
+                const slotIndices = Array.from({ length: maxNumberOfSlots }, (_, k) => k);
+                shuffleArray(slotIndices);
+                const chosenSlots = slotIndices.slice(0, numberOfSquares);
+
+                // Calculate offset to center the block of slots
+                const totalWidthUsed = maxNumberOfSlots * requiredSlotWidth;
+                const offsetLeft = Math.max(0, (canvasWidth - totalWidthUsed) / 2); // Ensure offset is not negative
+
 
                 for (let i = 0; i < numberOfSquares; i++) {
-                    const isCorrect = (i === correctSquareIndex);
-                    const number = isCorrect ? correctAnswer : incorrectArray.pop();
-                    let potentialX;
-                    let attempts = 0;
-                    let positionOK = false;
+                    const isCorrect = (i === correctSquareIndex && numberOfSquares > incorrectArray.length) || // Handle the normal case
+                                      (i === numberOfSquares -1 && numberOfSquares === incorrectArray.length + 1 && incorrectArray.length < 5 + Math.floor(level / 2)); // Handle case where correct answer was potentially moved to the end
 
-                    while (!positionOK && attempts < 20) {
-                        potentialX = Math.random() * (canvasWidth - squareSize);
-                        positionOK = true;
-                        for (const existingX of generatedXPositions) {
-                            if (Math.abs(potentialX - existingX) < minHorizontalSpacing) {
-                                positionOK = false;
-                                break;
-                            }
-                        }
-                        attempts++;
-                    }
-                    if (!positionOK) {
-                         potentialX = Math.random() * (canvasWidth - squareSize);
-                    }
-                    generatedXPositions.push(potentialX);
+                    // Use the pre-shuffled, unique slot index
+                    const slotIndex = chosenSlots[i];
+
+                    // Calculate the center of the slot, then the square's top-left X
+                    const slotCenterX = offsetLeft + (slotIndex * requiredSlotWidth) + (requiredSlotWidth / 2);
+                    const startX = slotCenterX - squareSize / 2;
+
+                    // Ensure startX is within bounds (can happen with rounding or narrow screens)
+                    const clampedStartX = Math.max(0, Math.min(startX, canvasWidth - squareSize));
 
                     const speedVariation = 0.85 + Math.random() * 0.30;
                     const individualSpeed = Math.max(0.5, levelBaseSpeed * speedVariation);
 
                     fallingSquares.push({
-                        x: potentialX,
-                        y: -(Math.random() * canvasHeight * 0.5 + squareSize),
+                        x: clampedStartX, // Use calculated X based on slot
+                        y: -(Math.random() * canvasHeight * 0.4 + squareSize * 1.5), // Slightly more staggered start Y
                         size: squareSize,
-                        number: number,
+                        number: isCorrect ? correctAnswer : incorrectArray.pop(),
                         color: getRandomPastelColor(),
                         speed: individualSpeed,
                         isCorrect: isCorrect
                     });
                 }
+                 // Ensure incorrectArray is empty if logic was complex
+                incorrectArray.length = 0;
             }
 
 
             function startNewRound() {
                 gameActive = false;
                 generateNewProblem();
-                // Recalculate dimensions based on problem before generating squares
                 playerRect.width = playerRect.baseWidth;
                 playerRect.height = playerRect.baseHeight;
-                generateFallingSquares();
+                generateFallingSquares(); // Generates squares with new spacing logic
                 updateUI();
                 setTimeout(() => { gameActive = true; }, 300);
             }
 
             function restartCurrentAttempt() {
                  gameActive = false;
-                 // Recalculate dimensions in case they were altered
                  playerRect.width = playerRect.baseWidth;
                  playerRect.height = playerRect.baseHeight;
-                 generateFallingSquares(); // Regenerate squares for the SAME problem
+                 generateFallingSquares(); // Regenerate squares for SAME problem with spacing
                  updateUI();
                  setTimeout(() => { gameActive = true; }, 300);
             }
@@ -332,29 +320,24 @@
             // --- Drawing Functions ---
 
             function drawBottomRectangle() {
-                // Draw main rectangle background
                 ctx.fillStyle = playerRect.color;
                 ctx.fillRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
                 ctx.strokeStyle = playerRect.gridLineColor;
                 ctx.lineWidth = playerRect.gridLineWidth * 2;
                 ctx.strokeRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
 
-                // Calculate grid cell dimensions
                 const cellWidth = playerRect.width / currentProblem.factor1;
                 const cellHeight = playerRect.height / currentProblem.factor2;
 
                 ctx.lineWidth = playerRect.gridLineWidth;
                 ctx.strokeStyle = playerRect.gridLineColor;
 
-                // Draw vertical grid lines
                 for (let i = 1; i < currentProblem.factor1; i++) {
                     ctx.beginPath();
                     ctx.moveTo(playerRect.x + i * cellWidth, playerRect.y);
                     ctx.lineTo(playerRect.x + i * cellWidth, playerRect.y + playerRect.height);
                     ctx.stroke();
                 }
-
-                // Draw horizontal grid lines
                 for (let j = 1; j < currentProblem.factor2; j++) {
                     ctx.beginPath();
                     ctx.moveTo(playerRect.x, playerRect.y + j * cellHeight);
@@ -362,9 +345,8 @@
                     ctx.stroke();
                 }
 
-                // Draw grid dimension labels
                 ctx.fillStyle = playerRect.labelColor;
-                ctx.font = playerRect.labelFont; // Use updated font size
+                ctx.font = playerRect.labelFont;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
                 ctx.fillText(`${currentProblem.factor1}`, playerRect.x + playerRect.width - cellWidth / 2, playerRect.y + playerRect.height + 5);
@@ -373,15 +355,9 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText(`${currentProblem.factor2}`, playerRect.x + playerRect.width + 5, playerRect.y + playerRect.height - cellHeight / 2);
 
-
-                // Draw feedback flash if active
                 if (feedbackTimer > 0) {
                     ctx.globalAlpha = feedbackTimer / 30;
-                    if (feedbackType === 'correct') {
-                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    } else if (feedbackType === 'incorrect') {
-                        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                    }
+                    ctx.fillStyle = feedbackType === 'correct' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 0, 0, 0.7)';
                     ctx.fillRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
                     ctx.globalAlpha = 1.0;
                 }
@@ -402,28 +378,17 @@
              // --- Update & Collision ---
 
             function handlePlayerMovement() {
-                // Only apply keyboard movement if not actively touching
                 if (!isTouching) {
                     playerRect.dx = 0;
-                    if (keys.ArrowLeft) {
-                        playerRect.dx = -playerRect.speed;
-                    }
-                    if (keys.ArrowRight) {
-                        playerRect.dx = playerRect.speed;
-                    }
+                    if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
+                    if (keys.ArrowRight) playerRect.dx = playerRect.speed;
                     let newX = playerRect.x + playerRect.dx;
-
-                    // Boundary detection
-                    if (newX < 0) {
-                        newX = 0;
-                    }
-                    if (newX + playerRect.width > canvasWidth) {
-                        newX = canvasWidth - playerRect.width;
-                    }
-                     playerRect.x = newX;
+                    newX = Math.max(0, Math.min(newX, canvasWidth - playerRect.width)); // Clamp
+                    playerRect.x = newX;
                 } else {
-                     playerRect.dx = 0; // Ensure keyboard dx is zeroed if touching
+                    playerRect.dx = 0;
                 }
+                // Touch movement is handled directly in handleTouchMove
             }
 
             function updateFallingSquares() {
@@ -439,7 +404,6 @@
 
             function checkCollisions() {
                 if (!gameActive) return;
-
                 for (let i = fallingSquares.length - 1; i >= 0; i--) {
                     if (!fallingSquares[i]) continue;
                     const square = fallingSquares[i];
@@ -450,7 +414,7 @@
                     const rectTop = playerRect.y;
                     const rectLeft = playerRect.x;
                     const rectRight = playerRect.x + playerRect.width;
-                    const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3; // Increased tolerance slightly
+                    const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
 
                     if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance &&
                         squareRight > rectLeft && squareLeft < rectRight)
@@ -461,12 +425,12 @@
                             feedbackType = 'correct';
                             feedbackTimer = 30;
                             startNewRound();
-                            return;
+                            return; // Exit collision check immediately after a catch
                         } else {
                             feedbackType = 'incorrect';
                             feedbackTimer = 30;
                             restartCurrentAttempt();
-                            return;
+                            return; // Exit collision check immediately after a catch
                         }
                     }
                 }
@@ -475,7 +439,7 @@
             // --- Game Loop ---
             function gameLoop(timestamp) {
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-                handlePlayerMovement(); // Handles both keyboard (if not touching) and applies boundaries
+                handlePlayerMovement();
                 updateFallingSquares();
                 checkCollisions();
                 drawBottomRectangle();
@@ -489,23 +453,19 @@
 
             // --- Initialization ---
             function init() {
-                // Apply initial size and position using the new base values
                 playerRect.width = playerRect.baseWidth;
                 playerRect.height = playerRect.baseHeight;
-                playerRect.y = canvasHeight - playerRect.baseHeight - 40; // Position using new baseHeight
-                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2; // Center using new baseWidth
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
 
-
-                // Handle window resize
                 window.addEventListener('resize', () => {
                      canvasWidth = window.innerWidth;
                      canvasHeight = window.innerHeight;
                      canvas.width = canvasWidth;
                      canvas.height = canvasHeight;
-                     // Recalculate position based on new screen size and reduced rect size
                      playerRect.y = canvasHeight - playerRect.baseHeight - 40;
                      playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-                     // Restart attempt to reposition squares for new width
+                     // Restart attempt ensures squares are regenerated respecting new width/slot constraints
                      restartCurrentAttempt();
                 });
 
