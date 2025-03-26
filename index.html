@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ensure proper viewport scaling for mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Multiplication Catch Game</title>
+    <style>
+        /* Basic Reset & No Scrollbars */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Crucial: Prevent scrollbars */
+            font-family: 'Arial', sans-serif; /* Simple, readable font */
+            /* Prevent pull-to-refresh and other touch gestures */
+            overscroll-behavior: none;
+        }
+
+        /* Space Background */
+        body {
+            background-color: #0a0a1a; /* Dark base for space */
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.1) 0%, transparent 30%), /* Light Blue Nebula */
+                radial-gradient(circle at 80% 70%, rgba(221, 160, 221, 0.1) 0%, transparent 30%), /* Plum Nebula */
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 5%), /* Faint central glow */
+                /* Tiny Stars using multiple small radial gradients */
+                radial-gradient(circle at 10% 10%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 50% 20%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 90% 30%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 30% 50%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 70% 60%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 15% 80%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 60% 90%, white 0.5px, transparent 1px),
+                radial-gradient(circle at 85% 55%, white 0.5px, transparent 1px);
+            background-size: cover;
+            background-attachment: fixed; /* Keeps background static */
+        }
+
+        /* Score and Level Display */
+        #scoreDisplay, #levelDisplay {
+            position: absolute;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333; /* Dark text for contrast on pastel */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+            z-index: 10; /* Ensure they are above the canvas */
+            /* Prevent text selection on UI elements */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        #scoreDisplay {
+            top: 10px;
+            left: 10px;
+            background-color: #A0E7E5; /* Pastel Cyan */
+        }
+
+        #levelDisplay {
+            top: 10px;
+            right: 10px;
+            background-color: #FFAEBC; /* Pastel Pink */
+        }
+
+        /* Canvas Styling */
+        #gameCanvas {
+            display: block; /* Removes potential extra space below */
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Width and height will be set by JavaScript */
+            z-index: 1; /* Below UI elements */
+        }
+    </style>
+</head>
+<body>
+    <!-- UI Elements -->
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="levelDisplay">Level: 1</div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Canvas Setup ---
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            let canvasWidth = window.innerWidth;
+            let canvasHeight = window.innerHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+
+            // --- UI Elements ---
+            const scoreElement = document.getElementById('scoreDisplay');
+            const levelElement = document.getElementById('levelDisplay');
+
+            // --- Game State ---
+            let score = 0;
+            let level = 1;
+            const maxLevel = 10;
+            let currentProblem = { factor1: 1, factor2: 1 };
+            let correctAnswer = 1;
+            let gameActive = true; // To pause during transitions/feedback
+            let feedbackTimer = 0; // Timer for showing feedback flashes
+            let feedbackType = null; // 'correct' or 'incorrect'
+
+            // --- Pastel Colors ---
+            const pastelColors = [
+                '#A0E7E5', // Cyan
+                '#B4F8C8', // Mint
+                '#FBE7C6', // Beige
+                '#FFAEBC', // Pink
+                '#FFDAC1', // Peach
+                '#CDB4DB', // Lavender
+                '#FFFACD', // Lemon Chiffon
+                '#ADD8E6', // Light Blue
+            ];
+
+            function getRandomPastelColor() {
+                return pastelColors[Math.floor(Math.random() * pastelColors.length)];
+            }
+
+            // --- Player Controlled Rectangle ---
+            // UPDATE 1: Reduce base size by 20% (80% of original)
+            const originalBaseWidth = 150;
+            const originalBaseHeight = 100;
+            const playerRect = {
+                baseWidth: originalBaseWidth * 0.8,   // Now 120
+                baseHeight: originalBaseHeight * 0.8,  // Now 80
+                x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2, // Initial horizontal center
+                y: canvasHeight - (originalBaseHeight * 0.8) - 40, // Position near bottom, same offset
+                width: originalBaseWidth * 0.8,   // Actual drawing width
+                height: originalBaseHeight * 0.8, // Actual drawing height
+                speed: 8, // Keyboard speed
+                dx: 0, // Horizontal velocity (for keyboard)
+                color: getRandomPastelColor(),
+                gridLineWidth: 1,
+                gridLineColor: 'rgba(50, 50, 50, 0.5)',
+                labelFont: 'bold 14px Arial', // Slightly smaller font for smaller rect
+                labelColor: 'white'
+            };
+
+            // --- Falling Squares ---
+            const fallingSquares = [];
+            const squareSize = 60;
+            const baseFallSpeed = 1;
+            const speedIncrement = 0.3;
+            const minHorizontalSpacing = squareSize * 1.1;
+
+            // --- Input Handling ---
+            // Keyboard
+            const keys = {
+                ArrowLeft: false,
+                ArrowRight: false
+            };
+            window.addEventListener('keydown', (e) => {
+                if (keys.hasOwnProperty(e.key)) {
+                    keys[e.key] = true;
+                }
+            });
+            window.addEventListener('keyup', (e) => {
+                 if (keys.hasOwnProperty(e.key)) {
+                    keys[e.key] = false;
+                }
+            });
+
+            // UPDATE 2: Touch Controls
+            let isTouching = false;
+            let touchX = 0; // Store the latest touch X position
+
+             // Function to handle touch position update
+            function handleTouchMove(clientX) {
+                // Map the touch X directly to the center of the rectangle
+                let targetRectCenterX = clientX;
+
+                // Calculate the desired rect.x based on the target center
+                let newRectX = targetRectCenterX - playerRect.width / 2;
+
+                // Apply boundary constraints
+                if (newRectX < 0) {
+                    newRectX = 0;
+                }
+                if (newRectX + playerRect.width > canvasWidth) {
+                    newRectX = canvasWidth - playerRect.width;
+                }
+                playerRect.x = newRectX;
+            }
+
+            canvas.addEventListener('touchstart', (e) => {
+                // Prevent default scroll/zoom behavior
+                e.preventDefault();
+                if (e.touches.length > 0) {
+                    isTouching = true;
+                    touchX = e.touches[0].clientX; // Get X of the first touch point
+                    handleTouchMove(touchX); // Move immediately on touch start
+                }
+            }, { passive: false }); // Need passive: false to call preventDefault
+
+            canvas.addEventListener('touchmove', (e) => {
+                 // Prevent default scroll/zoom behavior
+                e.preventDefault();
+                if (isTouching && e.touches.length > 0) {
+                    touchX = e.touches[0].clientX;
+                    handleTouchMove(touchX); // Update position on move
+                }
+            }, { passive: false }); // Need passive: false to call preventDefault
+
+            canvas.addEventListener('touchend', (e) => {
+                // Allow default behavior if needed after touch ends
+                // e.preventDefault(); // Usually not needed on touchend
+                if (isTouching) {
+                    isTouching = false;
+                }
+            });
+
+            canvas.addEventListener('touchcancel', (e) => {
+                // Handle cases where the touch is interrupted (e.g., browser UI)
+                 if (isTouching) {
+                    isTouching = false;
+                }
+            });
+
+
+            // --- Helper Functions ---
+            function getRandomInt(min, max) {
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+
+            // --- Game Logic Functions ---
+
+            function generateNewProblem() {
+                currentProblem.factor1 = getRandomInt(1, 9); // Columns
+                currentProblem.factor2 = getRandomInt(1, 9); // Rows
+                correctAnswer = currentProblem.factor1 * currentProblem.factor2;
+                playerRect.color = getRandomPastelColor(); // New color for the rectangle
+            }
+
+            function generateFallingSquares() {
+                fallingSquares.length = 0; // Clear existing squares
+                const numberOfSquares = 5 + Math.floor(level / 2);
+                const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement;
+                const correctSquareIndex = getRandomInt(0, numberOfSquares - 1);
+                const incorrectAnswers = new Set();
+
+                while (incorrectAnswers.size < numberOfSquares - 1) {
+                    let incorrect;
+                    if (Math.random() < 0.6 && correctAnswer > 1) {
+                         incorrect = correctAnswer + getRandomInt(-Math.min(correctAnswer -1 , 5), 5);
+                         if (incorrect === correctAnswer) incorrect++;
+                    } else {
+                        incorrect = getRandomInt(1, 9) * getRandomInt(1, 9);
+                    }
+                    if (incorrect !== correctAnswer && incorrect > 0 && !incorrectAnswers.has(incorrect)) {
+                        incorrectAnswers.add(incorrect);
+                    }
+                }
+                const incorrectArray = Array.from(incorrectAnswers);
+                const generatedXPositions = [];
+
+                for (let i = 0; i < numberOfSquares; i++) {
+                    const isCorrect = (i === correctSquareIndex);
+                    const number = isCorrect ? correctAnswer : incorrectArray.pop();
+                    let potentialX;
+                    let attempts = 0;
+                    let positionOK = false;
+
+                    while (!positionOK && attempts < 20) {
+                        potentialX = Math.random() * (canvasWidth - squareSize);
+                        positionOK = true;
+                        for (const existingX of generatedXPositions) {
+                            if (Math.abs(potentialX - existingX) < minHorizontalSpacing) {
+                                positionOK = false;
+                                break;
+                            }
+                        }
+                        attempts++;
+                    }
+                    if (!positionOK) {
+                         potentialX = Math.random() * (canvasWidth - squareSize);
+                    }
+                    generatedXPositions.push(potentialX);
+
+                    const speedVariation = 0.85 + Math.random() * 0.30;
+                    const individualSpeed = Math.max(0.5, levelBaseSpeed * speedVariation);
+
+                    fallingSquares.push({
+                        x: potentialX,
+                        y: -(Math.random() * canvasHeight * 0.5 + squareSize),
+                        size: squareSize,
+                        number: number,
+                        color: getRandomPastelColor(),
+                        speed: individualSpeed,
+                        isCorrect: isCorrect
+                    });
+                }
+            }
+
+
+            function startNewRound() {
+                gameActive = false;
+                generateNewProblem();
+                // Recalculate dimensions based on problem before generating squares
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                generateFallingSquares();
+                updateUI();
+                setTimeout(() => { gameActive = true; }, 300);
+            }
+
+            function restartCurrentAttempt() {
+                 gameActive = false;
+                 // Recalculate dimensions in case they were altered
+                 playerRect.width = playerRect.baseWidth;
+                 playerRect.height = playerRect.baseHeight;
+                 generateFallingSquares(); // Regenerate squares for the SAME problem
+                 updateUI();
+                 setTimeout(() => { gameActive = true; }, 300);
+            }
+
+            function updateUI() {
+                scoreElement.textContent = `Score: ${score}`;
+                levelElement.textContent = `Level: ${level}`;
+            }
+
+            // --- Drawing Functions ---
+
+            function drawBottomRectangle() {
+                // Draw main rectangle background
+                ctx.fillStyle = playerRect.color;
+                ctx.fillRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
+                ctx.strokeStyle = playerRect.gridLineColor;
+                ctx.lineWidth = playerRect.gridLineWidth * 2;
+                ctx.strokeRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
+
+                // Calculate grid cell dimensions
+                const cellWidth = playerRect.width / currentProblem.factor1;
+                const cellHeight = playerRect.height / currentProblem.factor2;
+
+                ctx.lineWidth = playerRect.gridLineWidth;
+                ctx.strokeStyle = playerRect.gridLineColor;
+
+                // Draw vertical grid lines
+                for (let i = 1; i < currentProblem.factor1; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(playerRect.x + i * cellWidth, playerRect.y);
+                    ctx.lineTo(playerRect.x + i * cellWidth, playerRect.y + playerRect.height);
+                    ctx.stroke();
+                }
+
+                // Draw horizontal grid lines
+                for (let j = 1; j < currentProblem.factor2; j++) {
+                    ctx.beginPath();
+                    ctx.moveTo(playerRect.x, playerRect.y + j * cellHeight);
+                    ctx.lineTo(playerRect.x + playerRect.width, playerRect.y + j * cellHeight);
+                    ctx.stroke();
+                }
+
+                // Draw grid dimension labels
+                ctx.fillStyle = playerRect.labelColor;
+                ctx.font = playerRect.labelFont; // Use updated font size
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`${currentProblem.factor1}`, playerRect.x + playerRect.width - cellWidth / 2, playerRect.y + playerRect.height + 5);
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${currentProblem.factor2}`, playerRect.x + playerRect.width + 5, playerRect.y + playerRect.height - cellHeight / 2);
+
+
+                // Draw feedback flash if active
+                if (feedbackTimer > 0) {
+                    ctx.globalAlpha = feedbackTimer / 30;
+                    if (feedbackType === 'correct') {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    } else if (feedbackType === 'incorrect') {
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    }
+                    ctx.fillRect(playerRect.x, playerRect.y, playerRect.width, playerRect.height);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            function drawFallingSquares() {
+                fallingSquares.forEach(square => {
+                    ctx.fillStyle = square.color;
+                    ctx.fillRect(square.x, square.y, square.size, square.size);
+                    ctx.fillStyle = '#333';
+                    ctx.font = `bold ${square.size * 0.45}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
+                });
+            }
+
+             // --- Update & Collision ---
+
+            function handlePlayerMovement() {
+                // Only apply keyboard movement if not actively touching
+                if (!isTouching) {
+                    playerRect.dx = 0;
+                    if (keys.ArrowLeft) {
+                        playerRect.dx = -playerRect.speed;
+                    }
+                    if (keys.ArrowRight) {
+                        playerRect.dx = playerRect.speed;
+                    }
+                    let newX = playerRect.x + playerRect.dx;
+
+                    // Boundary detection
+                    if (newX < 0) {
+                        newX = 0;
+                    }
+                    if (newX + playerRect.width > canvasWidth) {
+                        newX = canvasWidth - playerRect.width;
+                    }
+                     playerRect.x = newX;
+                } else {
+                     playerRect.dx = 0; // Ensure keyboard dx is zeroed if touching
+                }
+            }
+
+            function updateFallingSquares() {
+                if (!gameActive) return;
+                for (let i = fallingSquares.length - 1; i >= 0; i--) {
+                    const square = fallingSquares[i];
+                    square.y += square.speed;
+                    if (square.y > canvasHeight) {
+                        fallingSquares.splice(i, 1);
+                    }
+                }
+            }
+
+            function checkCollisions() {
+                if (!gameActive) return;
+
+                for (let i = fallingSquares.length - 1; i >= 0; i--) {
+                    if (!fallingSquares[i]) continue;
+                    const square = fallingSquares[i];
+                    const squareBottom = square.y + square.size;
+                    const squareTop = square.y;
+                    const squareLeft = square.x;
+                    const squareRight = square.x + square.size;
+                    const rectTop = playerRect.y;
+                    const rectLeft = playerRect.x;
+                    const rectRight = playerRect.x + playerRect.width;
+                    const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3; // Increased tolerance slightly
+
+                    if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance &&
+                        squareRight > rectLeft && squareLeft < rectRight)
+                    {
+                        if (square.isCorrect) {
+                            score++;
+                            if (score > 0 && score % 5 === 0 && level < maxLevel) { level++; }
+                            feedbackType = 'correct';
+                            feedbackTimer = 30;
+                            startNewRound();
+                            return;
+                        } else {
+                            feedbackType = 'incorrect';
+                            feedbackTimer = 30;
+                            restartCurrentAttempt();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // --- Game Loop ---
+            function gameLoop(timestamp) {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                handlePlayerMovement(); // Handles both keyboard (if not touching) and applies boundaries
+                updateFallingSquares();
+                checkCollisions();
+                drawBottomRectangle();
+                drawFallingSquares();
+                if (feedbackTimer > 0) {
+                    feedbackTimer--;
+                    if (feedbackTimer <= 0) { feedbackType = null; }
+                }
+                requestAnimationFrame(gameLoop);
+            }
+
+            // --- Initialization ---
+            function init() {
+                // Apply initial size and position using the new base values
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40; // Position using new baseHeight
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2; // Center using new baseWidth
+
+
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                     canvasWidth = window.innerWidth;
+                     canvasHeight = window.innerHeight;
+                     canvas.width = canvasWidth;
+                     canvas.height = canvasHeight;
+                     // Recalculate position based on new screen size and reduced rect size
+                     playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                     playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                     // Restart attempt to reposition squares for new width
+                     restartCurrentAttempt();
+                });
+
+                startNewRound();
+                updateUI();
+                gameLoop();
+            }
+
+            // --- Start the game ---
+            init();
+        });
+    </script>
+</body>
+</html>
