@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es"> {/* Changed lang to Spanish */}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Multiplication Catch Game 3D FX</title>
+    <title>Juego de Multiplicar</title> {/* Changed title */}
     <style>
         /* Basic Reset & No Scrollbars */
         html, body {
@@ -18,7 +18,6 @@
                 radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.1) 0%, transparent 30%),
                 radial-gradient(circle at 80% 70%, rgba(221, 160, 221, 0.1) 0%, transparent 30%),
                 radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 5%),
-                /* Tiny stars */
                 radial-gradient(circle at 10% 10%, white 0.5px, transparent 1px), radial-gradient(circle at 50% 20%, white 0.5px, transparent 1px),
                 radial-gradient(circle at 90% 30%, white 0.5px, transparent 1px), radial-gradient(circle at 30% 50%, white 0.5px, transparent 1px),
                 radial-gradient(circle at 70% 60%, white 0.5px, transparent 1px), radial-gradient(circle at 15% 80%, white 0.5px, transparent 1px),
@@ -27,30 +26,30 @@
         }
 
         /* UI Elements Styling */
-        #scoreDisplay, #failuresDisplay, #levelDisplay {
+        #scoreDisplay, #failuresDisplay, #levelDisplay, #newGameButton { /* Added button */
             position: absolute; padding: 10px 15px; border-radius: 8px;
-            font-size: 1.4em; font-weight: bold; color: #333;
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); z-index: 10; /* High z-index */
+            font-weight: bold; color: #333;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); z-index: 10;
             user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;
         }
+        #scoreDisplay, #failuresDisplay, #levelDisplay { font-size: 1.4em; }
         #scoreDisplay { top: 10px; left: 10px; background-color: #A0E7E5; }
         #failuresDisplay { top: 55px; left: 10px; background-color: #FFDAC1; }
         #levelDisplay { top: 10px; right: 10px; background-color: #FFAEBC; }
 
-        /* Canvas Elements Styling */
-        #gameCanvas, #threeCanvas {
-            display: block; position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%; /* Ensure they cover the viewport */
+        /* UPDATE 2: New Game Button Styling */
+        #newGameButton {
+            bottom: 10px; right: 10px; background-color: #B4F8C8; /* Mint */
+            font-size: 1.1em; border: none; cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
-        /* 2D Canvas for core game */
+         #newGameButton:hover { background-color: #a3e4b3; } /* Slightly darker on hover */
+
+        /* Canvas Styling */
         #gameCanvas {
+            display: block; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1; background-color: transparent;
-        }
-        /* 3D Canvas for effects (overlay) */
-        #threeCanvas {
-            z-index: 2; /* Above game canvas, below UI */
-            pointer-events: none; /* Allow clicks/touches to pass through */
-            background-color: transparent; /* Make it see-through */
         }
     </style>
 </head>
@@ -59,82 +58,50 @@
     <div id="scoreDisplay">Score: 0</div>
     <div id="failuresDisplay">Fallas: 0</div>
     <div id="levelDisplay">Level: 1</div>
+    <!-- UPDATE 2: Added New Game Button -->
+    <button id="newGameButton">Nuevo Juego</button>
 
-    <!-- Canvas Elements -->
+    <!-- Canvas Element -->
     <canvas id="gameCanvas"></canvas>
-    <canvas id="threeCanvas"></canvas> <!-- Added canvas for Three.js -->
 
-    <!-- Three.js Library via CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- NO Three.js library needed -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- Canvas Setup ---
-            const canvas = document.getElementById('gameCanvas'); // 2D game canvas
+            const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
             let canvasWidth = window.innerWidth;
             let canvasHeight = window.innerHeight;
             canvas.width = canvasWidth;
             canvas.height = canvasHeight;
 
-            // --- Three.js Setup ---
-            const threeCanvas = document.getElementById('threeCanvas'); // 3D effects canvas
-            let scene, camera, renderer, ambientLight;
-            let explosionParticles = [];
-            let threeExplosionActive = false;
-            let threeExplosionProgress = 0;
-            const threeExplosionDuration = 60; // Frames for 3D explosion
-            const clock = new THREE.Clock(); // For animation delta time
-
-            function setupThreeScene() {
-                scene = new THREE.Scene();
-
-                // Camera (Perspective for depth)
-                camera = new THREE.PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000);
-                camera.position.z = 50; // Adjust as needed
-
-                // Renderer
-                renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true }); // alpha:true for transparency
-                renderer.setSize(canvasWidth, canvasHeight);
-                renderer.setPixelRatio(window.devicePixelRatio); // For sharp rendering
-
-                // Lighting
-                ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                scene.add(ambientLight);
-                // Optional: Add a point light for more dynamic effect
-                // const pointLight = new THREE.PointLight(0xffffff, 0.8, 1000);
-                // pointLight.position.set(0, 50, 50);
-                // scene.add(pointLight);
-            }
-
-            function map2Dto3D(x2d, y2d) {
-                // Simple mapping: center (0,0) in 3D corresponds to center of canvas
-                // Adjust Y because 2D Y is down, 3D Y is up
-                // Scale based on camera distance/FOV - this is approximate!
-                const scaleFactor = 0.1; // Adjust this factor based on camera setup
-                const x3d = (x2d - canvasWidth / 2) * scaleFactor;
-                const y3d = -(y2d - canvasHeight / 2) * scaleFactor;
-                return new THREE.Vector3(x3d, y3d, 0); // Place explosion on Z=0 plane
-            }
-
-             // --- UI Elements ---
+            // --- UI Elements ---
             const scoreElement = document.getElementById('scoreDisplay');
             const failuresElement = document.getElementById('failuresDisplay');
             const levelElement = document.getElementById('levelDisplay');
+            const newGameBtn = document.getElementById('newGameButton'); // UPDATE 2
 
             // --- Game State ---
             let score = 0; let failures = 0; let level = 1;
             const maxLevel = 12;
             let currentProblem = { factor1: 1, factor2: 1 }; let correctAnswer = 1;
-            let gameActive = true; // Core game logic active?
-            let feedbackTimer = 0; let feedbackType = null; // For 2D catcher flash
+            let gameActive = true;
+            let feedbackTimer = 0; let feedbackType = null;
             let fullscreenRequested = false;
 
-            // --- Confetti Effect State (2D Canvas) ---
-            let confettiActive = false;
-            let confettiParticles = [];
-            const confettiDuration = 90; // Frames for confetti burst
-            let confettiTimer = 0;
+            // --- Confetti Effect State ---
+            let confettiActive = false; let confettiParticles = [];
+            const confettiDuration = 90; let confettiTimer = 0;
+
+            // --- UPDATE 1: Split Explosion State ---
+            let splitExplosionActive = false;
+            let splitPieces = []; // Array to hold the 4 pieces
+            const splitExplosionDuration = 60; // Frames for animation
+            let splitExplosionTimer = 0;
+            const gravity = 0.15; // Gravity effect on pieces
+            const damping = 0.99; // Air resistance
+
 
             // --- Colors ---
             const pastelColors = ['#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFAEBC', '#FFDAC1', '#CDB4DB', '#FFFACD', '#ADD8E6'];
@@ -163,48 +130,47 @@
             function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
             function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
             function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
-            function goFullScreen() {
-                const element = document.documentElement;
+            function goFullScreen() { /* ... (same as before) ... */
+                 const element = document.documentElement;
                 if (element.requestFullscreen) element.requestFullscreen();
                 else if (element.mozRequestFullScreen) element.mozRequestFullScreen();
                 else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen();
                 else if (element.msRequestFullscreen) element.msRequestFullscreen();
                 fullscreenRequested = true;
-            }
-            // Convert hex color string to THREE.Color
-            function hexToThreeColor(hex) { return new THREE.Color(hex); }
+             }
 
             // --- Input Handling ---
             const keys = { ArrowLeft: false, ArrowRight: false };
             let isTouching = false; let touchX = 0;
             window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
             window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-            function handleTouchMove(clientX) {
-                let newRectX = clientX - playerRect.width / 2;
+            function handleTouchMove(clientX) { /* ... (same as before) ... */
+                 let newRectX = clientX - playerRect.width / 2;
                 playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width));
-            }
-            canvas.addEventListener('touchstart', (e) => { // Listen on game canvas
-                e.preventDefault();
+             }
+            canvas.addEventListener('touchstart', (e) => { /* ... (same as before) ... */
+                 e.preventDefault();
                 if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); }
                 if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); }
             }, { passive: false });
-             canvas.addEventListener('touchmove', (e) => { // Listen on game canvas
-                e.preventDefault();
+             canvas.addEventListener('touchmove', (e) => { /* ... (same as before) ... */
+                 e.preventDefault();
                 if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); }
             }, { passive: false });
             canvas.addEventListener('touchend', () => { isTouching = false; });
             canvas.addEventListener('touchcancel', () => { isTouching = false; });
 
+            // UPDATE 2: Add listener for New Game button
+            newGameBtn.addEventListener('click', resetGame);
 
             // --- Game Logic ---
-            function generateNewProblem() {
+            function generateNewProblem() { /* ... (same as before) ... */
                 currentProblem.factor1 = getRandomInt(1, 9); currentProblem.factor2 = getRandomInt(1, 9);
                 correctAnswer = currentProblem.factor1 * currentProblem.factor2;
-                playerRect.color = getRandomPastelColor(); // Get new color for catcher & potential explosion
-            }
-
-            function generateFallingSquares() { /* ... (Same as previous version) ... */
-                 fallingSquares.length = 0;
+                playerRect.color = getRandomPastelColor();
+             }
+            function generateFallingSquares() { /* ... (same as before) ... */
+                fallingSquares.length = 0;
                 let numberOfSquares = 5 + Math.floor(level / 2);
                 const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement;
                 let correctSquareIndex = getRandomInt(0, numberOfSquares - 1);
@@ -261,26 +227,28 @@
                     });
                 }
                 incorrectArray.length = 0;
-            }
+             }
 
-             function startNewRound() {
-                gameActive = true; // Core game logic resumes
-                threeExplosionActive = false; // Ensure 3D explosion is off
-                confettiActive = false; // Ensure confetti is off
-                cleanupThreeExplosion(); // Remove any leftover particles
-                cleanupConfetti();       // Remove any leftover confetti
+            function startNewRound() {
+                gameActive = true;
+                splitExplosionActive = false; // Ensure explosion off
+                splitPieces.length = 0; // Clear pieces
+                confettiActive = false; // Ensure confetti off
+                confettiParticles.length = 0; // Clear confetti
                 feedbackType = null; feedbackTimer = 0;
 
                 generateNewProblem();
                 playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
+                // Ensure catcher is centered if needed (or rely on last position)
+                // playerRect.x = canvasWidth / 2 - playerRect.width / 2;
                 generateFallingSquares();
                 updateUI();
             }
 
             function restartAttemptInternal() {
-                gameActive = true; // Re-enable core game logic
-                threeExplosionActive = false; // Explosion state reset
-                cleanupThreeExplosion(); // Clean up 3D particles
+                gameActive = true; // Re-enable game logic AFTER explosion
+                splitExplosionActive = false; // Reset explosion state
+                splitPieces.length = 0; // Clear pieces array
 
                 // Regenerate squares for the SAME problem
                 playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
@@ -288,58 +256,79 @@
                 updateUI();
             }
 
-            // Modified function for incorrect catch
-             function triggerIncorrectCatchSequence(collidedSquare) {
-                gameActive = false; // PAUSE core game logic
+            // UPDATE 1 & 2: Incorrect catch triggers 2D split explosion
+            function triggerIncorrectCatchSequence(collidedSquare) {
+                gameActive = false; // PAUSE game logic immediately
                 failures++;
                 updateUI();
 
                 if (collidedSquare) { collidedSquare.color = failureColor; } // Make 2D square red
 
-                feedbackType = 'incorrect'; // For red flash on 2D catcher
+                feedbackType = 'incorrect'; // For red flash at catcher's original spot
                 feedbackTimer = 40; // Duration for the 2D flash
 
-                // --- Trigger 3D Explosion ---
-                threeExplosionActive = true;
-                threeExplosionProgress = 0;
-                createThreeExplosion(); // Create the particles
-                animateThree(); // Start the Three.js animation loop if not running
-                // restartAttemptInternal() is now called when the 3D explosion finishes in animateThree
+                // --- Trigger 2D Split Explosion ---
+                splitExplosionActive = true;
+                splitExplosionTimer = 0;
+                createSplitPieces(); // Create the 4 pieces
+                // restartAttemptInternal() is called when the split explosion finishes in gameLoop
             }
 
-             // --- Confetti Trigger ---
-            function triggerLevelUpConfetti() {
-                confettiActive = true;
+            function triggerLevelUpConfetti() { /* ... (same as before) ... */
+                 confettiActive = true;
                 confettiTimer = confettiDuration;
-                createConfettiBurst(); // Create initial burst
-                // Animation handled in main gameLoop
+                createConfettiBurst();
             }
 
-            function updateUI() {
-                scoreElement.textContent = `Score: ${score}`;
+            function updateUI() { /* ... (same as before) ... */
+                 scoreElement.textContent = `Score: ${score}`;
                 failuresElement.textContent = `Fallas: ${failures}`;
                 levelElement.textContent = `Level: ${level}`;
-            }
+             }
+
+             // UPDATE 2: Reset Game Function
+             function resetGame() {
+                console.log("Resetting game...");
+                // Reset core variables
+                score = 0;
+                failures = 0;
+                level = 1;
+                fullscreenRequested = false; // Allow fullscreen request again
+
+                // Stop any ongoing animations/effects
+                splitExplosionActive = false;
+                splitPieces.length = 0;
+                confettiActive = false;
+                confettiParticles.length = 0;
+                feedbackTimer = 0;
+                feedbackType = null;
+                fallingSquares.length = 0; // Clear existing squares immediately
+
+                // Reset player position (optional, startNewRound might handle it)
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+
+                // Start a fresh round
+                gameActive = true; // Make sure game is active before starting
+                startNewRound(); // This generates problem, squares, and updates UI
+             }
 
 
             // --- Drawing Functions (2D Canvas) ---
             function drawBottomRectangle() {
-                // Don't draw the 2D catcher if the 3D explosion is happening
-                if (threeExplosionActive) return;
+                // Don't draw the normal catcher if the split explosion is active
+                if (splitExplosionActive) return;
 
                 const rectX = playerRect.x; const rectY = playerRect.y;
                 const rectW = playerRect.width; const rectH = playerRect.height;
 
+                // Draw Catcher (same as before)
                 ctx.fillStyle = playerRect.color; ctx.fillRect(rectX, rectY, rectW, rectH);
                 ctx.strokeStyle = playerRect.gridLineColor; ctx.lineWidth = playerRect.gridLineWidth * 2;
                 ctx.strokeRect(rectX, rectY, rectW, rectH);
-
                 const cellWidth = rectW / currentProblem.factor1; const cellHeight = rectH / currentProblem.factor2;
                 ctx.lineWidth = playerRect.gridLineWidth; ctx.strokeStyle = playerRect.gridLineColor;
-
                 for (let i = 1; i < currentProblem.factor1; i++) { ctx.beginPath(); ctx.moveTo(rectX + i * cellWidth, rectY); ctx.lineTo(rectX + i * cellWidth, rectY + rectH); ctx.stroke(); }
                 for (let j = 1; j < currentProblem.factor2; j++) { ctx.beginPath(); ctx.moveTo(rectX, rectY + j * cellHeight); ctx.lineTo(rectX + rectW, rectY + j * cellHeight); ctx.stroke(); }
-
                 ctx.fillStyle = playerRect.labelColor; ctx.font = playerRect.labelFont;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'top';
                 ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5);
@@ -347,23 +336,22 @@
                 ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
 
                 // Draw 2D feedback flash (red or white)
-                if (feedbackTimer > 0) {
-                    ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7); // Fade out
-                    if (feedbackType === 'incorrect') {
-                        ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-                    } else if (feedbackType === 'correct') {
-                         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-                    }
+                if (feedbackTimer > 0) { /* ... (same as before) ... */
+                     ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7); // Fade out
+                    if (feedbackType === 'incorrect') { ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; }
+                    else if (feedbackType === 'correct') { ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; }
                     ctx.fillRect(rectX, rectY, rectW, rectH);
                     ctx.globalAlpha = 1.0;
-                }
+                 }
             }
 
             function drawFallingSquares() {
-                // Draw only if core game is active
-                if (!gameActive) return;
+                // Draw squares if game is active OR if the split explosion is active
+                // (to keep the collided red square visible during explosion)
+                 if (!gameActive && !splitExplosionActive) return;
+
                 fallingSquares.forEach(square => {
-                    ctx.fillStyle = square.color; // Might be red if it just caused failure
+                    ctx.fillStyle = square.color; // Color might be red
                     ctx.fillRect(square.x, square.y, square.size, square.size);
                     ctx.fillStyle = '#333'; ctx.font = `bold ${square.size * 0.45}px Arial`;
                     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -371,56 +359,133 @@
                 });
             }
 
-             // --- 2D Confetti Drawing ---
-             function createConfettiBurst() {
-                const burstAmount = 100;
+            function createConfettiBurst() { /* ... (same as before) ... */
+                 const burstAmount = 100;
+                confettiParticles.length = 0; // Clear previous confetti
                 for (let i = 0; i < burstAmount; i++) {
                     confettiParticles.push({
                         x: Math.random() * canvasWidth,
-                        y: -Math.random() * canvasHeight * 0.2, // Start above screen
-                        vx: (Math.random() - 0.5) * 4, // Sideways velocity
-                        vy: Math.random() * 3 + 2,      // Downward velocity
-                        color: getRandomPastelColor(),
-                        size: Math.random() * 8 + 4,
+                        y: -Math.random() * canvasHeight * 0.2,
+                        vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3 + 2,
+                        color: getRandomPastelColor(), size: Math.random() * 8 + 4,
                         angle: Math.random() * Math.PI * 2,
-                        angularVelocity: (Math.random() - 0.5) * 0.1,
-                        life: 1.0 // Normalized lifetime (1.0 = full, 0.0 = dead)
+                        angularVelocity: (Math.random() - 0.5) * 0.1, life: 1.0
                     });
                 }
-            }
-             function updateAndDrawConfetti(deltaTime) {
-                if (!confettiActive && confettiParticles.length === 0) return;
+             }
+            function updateAndDrawConfetti(deltaTime) { /* ... (same as before) ... */
+                 if (confettiParticles.length === 0) return; // More efficient check
 
-                const decayRate = deltaTime / (confettiDuration / 60); // Approx decay per second
+                const decayRate = deltaTime / (confettiDuration / 60); // Approx decay per frame time
 
                 for (let i = confettiParticles.length - 1; i >= 0; i--) {
                     const p = confettiParticles[i];
-                    p.x += p.vx * deltaTime * 60; // Adjust velocity by delta time
+                    p.x += p.vx * deltaTime * 60; // Adjust velocity by normalized frame time
                     p.y += p.vy * deltaTime * 60;
-                    p.vy += 0.05 * deltaTime * 60; // Gravity
+                    p.vy += gravity * deltaTime * 60; // Use defined gravity
                     p.angle += p.angularVelocity * deltaTime * 60;
                     p.life -= decayRate;
 
-                    if (p.life <= 0 || p.y > canvasHeight) {
-                        confettiParticles.splice(i, 1); // Remove dead particles
+                    if (p.life <= 0 || p.y > canvasHeight + p.size) { // Check slightly below screen
+                        confettiParticles.splice(i, 1);
                     } else {
                         ctx.save();
                         ctx.translate(p.x, p.y);
                         ctx.rotate(p.angle);
                         ctx.fillStyle = p.color;
-                        ctx.globalAlpha = p.life; // Fade out
+                        ctx.globalAlpha = Math.max(0, p.life); // Ensure alpha isn't negative
                         ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
                         ctx.restore();
                     }
                 }
                 ctx.globalAlpha = 1.0; // Reset alpha
-            }
-             function cleanupConfetti() { confettiParticles.length = 0; }
+             }
 
+
+            // --- UPDATE 1: Split Explosion Logic ---
+            function createSplitPieces() {
+                splitPieces = []; // Clear previous pieces
+                const pieceW = playerRect.width / 2;
+                const pieceH = playerRect.height / 2;
+                const originX = playerRect.x;
+                const originY = playerRect.y;
+                const baseSpeed = 5; // Base speed multiplier
+
+                const positions = [
+                    { x: originX, y: originY },         // Top-Left
+                    { x: originX + pieceW, y: originY }, // Top-Right
+                    { x: originX, y: originY + pieceH }, // Bottom-Left
+                    { x: originX + pieceW, y: originY + pieceH } // Bottom-Right
+                ];
+
+                positions.forEach((pos, index) => {
+                    // Calculate velocity direction roughly away from center
+                    const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2);
+                    const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2);
+                    const angle = Math.atan2(centerOffsetY, centerOffsetX);
+
+                    const speed = baseSpeed + Math.random() * 3; // Randomize speed slightly
+
+                    splitPieces.push({
+                        x: pos.x, y: pos.y,
+                        w: pieceW, h: pieceH,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - Math.random() * 3, // Add some upward randomness
+                        rotation: 0,
+                        rotationSpeed: (Math.random() - 0.5) * 0.15, // Random rotation
+                        color: playerRect.color // Use the catcher's color
+                    });
+                });
+            }
+
+            function updateSplitExplosion(deltaTime) {
+                 if (!splitExplosionActive) return;
+
+                 splitExplosionTimer++;
+                 const timeFactor = deltaTime * 60; // Normalize calculations to ~60fps
+
+                 for (let i = splitPieces.length - 1; i >= 0; i--) {
+                     const piece = splitPieces[i];
+                     piece.x += piece.vx * timeFactor;
+                     piece.y += piece.vy * timeFactor;
+                     piece.vy += gravity * timeFactor; // Apply gravity
+                     piece.vx *= damping; // Apply air resistance
+                     piece.vy *= damping;
+                     piece.rotation += piece.rotationSpeed * timeFactor;
+
+                     // Optional: Remove pieces far off-screen to save processing
+                     if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) {
+                         splitPieces.splice(i, 1);
+                     }
+                 }
+
+                 // Check if animation duration is over AND pieces are gone (or just duration)
+                 if (splitExplosionTimer >= splitExplosionDuration) {
+                     splitExplosionActive = false;
+                     splitExplosionTimer = 0;
+                     splitPieces.length = 0; // Ensure pieces are cleared
+                     restartAttemptInternal(); // Restart the game attempt
+                 }
+            }
+
+            function drawSplitExplosion() {
+                 if (!splitExplosionActive) return;
+
+                 splitPieces.forEach(piece => {
+                     ctx.save();
+                     // Translate to the center of the piece for rotation
+                     ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
+                     ctx.rotate(piece.rotation);
+                     ctx.fillStyle = piece.color;
+                     // Draw the piece centered around the origin
+                     ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+                     ctx.restore();
+                 });
+            }
 
             // --- Update & Collision (2D) ---
-            function handlePlayerMovement() {
-                if (!gameActive) return; // No movement during effects
+            function handlePlayerMovement() { /* ... (same as before, checks gameActive) ... */
+                 if (!gameActive) return;
                 if (!isTouching) {
                     playerRect.dx = 0;
                     if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
@@ -429,15 +494,15 @@
                     playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width));
                 } else { playerRect.dx = 0; }
             }
-            function updateFallingSquares() {
-                if (!gameActive) return;
+            function updateFallingSquares() { /* ... (same as before, checks gameActive) ... */
+                 if (!gameActive) return;
                 for (let i = fallingSquares.length - 1; i >= 0; i--) {
                     const square = fallingSquares[i]; square.y += square.speed;
                     if (square.y > canvasHeight) { fallingSquares.splice(i, 1); }
                 }
-            }
-            function checkCollisions() {
-                if (!gameActive) return; // No collisions during effects
+             }
+            function checkCollisions() { /* ... (same as before, checks gameActive) ... */
+                 if (!gameActive) return;
                 for (let i = fallingSquares.length - 1; i >= 0; i--) {
                     if (!fallingSquares[i]) continue;
                     const square = fallingSquares[i]; const squareBottom = square.y + square.size;
@@ -448,24 +513,11 @@
 
                     if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && squareRight > rectLeft && squareLeft < rectRight) {
                         if (square.isCorrect) {
-                            score++;
-                            let levelIncreased = false;
-                            if (score > 0 && score % 5 === 0 && level < maxLevel) {
-                                level++;
-                                levelIncreased = true;
-                            }
+                            score++; let levelIncreased = false;
+                            if (score > 0 && score % 5 === 0 && level < maxLevel) { level++; levelIncreased = true; }
                             feedbackType = 'correct'; feedbackTimer = 15;
-                            startNewRound(); // Start next round (clears confetti etc.)
-                            if (levelIncreased) {
-                                triggerLevelUpConfetti(); // Trigger AFTER starting new round? Or before cleanup? Let's try before cleanup.
-                            }
-                             // Decision: Trigger confetti *just before* starting new round might look better.
-                            // Let's modify:
-                            // if (levelIncreased) { triggerLevelUpConfetti(); }
-                            // startNewRound(); // startNewRound will clear it, need to handle timing.
-                            // Alternative: Let confetti run alongside the next round briefly.
-                             // Let's allow confetti to overlap slightly.
-
+                            if (levelIncreased) { triggerLevelUpConfetti(); } // Trigger confetti *before* new round starts
+                            startNewRound(); // Start next round
                             return;
                         } else {
                             triggerIncorrectCatchSequence(square);
@@ -473,181 +525,58 @@
                         }
                     }
                 }
-            }
-
-            // --- Three.js Explosion Logic ---
-            function createThreeExplosion() {
-                cleanupThreeExplosion(); // Clear previous if any
-
-                const particleCount = 100;
-                const particleSize = 0.5; // Small cubes in 3D space
-                const geometry = new THREE.BoxGeometry(particleSize, particleSize, particleSize);
-                const material = new THREE.MeshStandardMaterial({
-                    color: hexToThreeColor(playerRect.color), // Use catcher's current color
-                    metalness: 0.3,
-                    roughness: 0.6,
-                });
-
-                // Get explosion origin in 3D
-                 const origin3D = map2Dto3D(playerRect.x + playerRect.width / 2, playerRect.y + playerRect.height / 2);
-
-                for (let i = 0; i < particleCount; i++) {
-                    const mesh = new THREE.Mesh(geometry, material.clone()); // Clone material if changing props per particle later
-
-                    // Position at origin
-                    mesh.position.copy(origin3D);
-
-                    // Random outward velocity
-                    const velocity = new THREE.Vector3(
-                        (Math.random() - 0.5),
-                        (Math.random() - 0.5),
-                        (Math.random() - 0.5)
-                    );
-                    velocity.normalize().multiplyScalar(Math.random() * 20 + 10); // Speed range
-
-                    // Store mesh and velocity
-                    explosionParticles.push({ mesh, velocity, life: 1.0 });
-                    scene.add(mesh);
-                }
-            }
-
-            function updateThreeExplosion(deltaTime) {
-                if (!threeExplosionActive) return;
-
-                threeExplosionProgress++;
-                const decayRate = deltaTime / (threeExplosionDuration / 60); // Decay per second approx
-
-                for (let i = explosionParticles.length - 1; i >= 0; i--) {
-                    const p = explosionParticles[i];
-
-                    // Apply velocity
-                    p.mesh.position.addScaledVector(p.velocity, deltaTime);
-
-                    // Apply damping/gravity (optional)
-                    p.velocity.multiplyScalar(1 - (0.5 * deltaTime)); // Air resistance
-                    p.velocity.y -= 5 * deltaTime; // Gravity
-
-                    // Decrease life and fade/scale (optional)
-                    p.life -= decayRate;
-                    if (p.mesh.material.opacity) { // Check if opacity exists
-                        p.mesh.material.opacity = Math.max(0, p.life);
-                         p.mesh.material.transparent = true; // Need this for opacity
-                    }
-                     p.mesh.scale.setScalar(Math.max(0.01, p.life)); // Shrink
-
-                    if (p.life <= 0) {
-                        scene.remove(p.mesh);
-                        explosionParticles.splice(i, 1);
-                    }
-                }
-
-                // Check if explosion finished
-                if (threeExplosionProgress >= threeExplosionDuration && explosionParticles.length === 0) {
-                    threeExplosionActive = false;
-                    threeExplosionProgress = 0;
-                    restartAttemptInternal(); // Restart the 2D game attempt
-                }
-            }
-
-            function cleanupThreeExplosion() {
-                explosionParticles.forEach(p => scene.remove(p.mesh));
-                explosionParticles.length = 0;
-            }
-
+             }
 
              // --- Main Animation Loop ---
-             let threeAnimFrameId = null; // To control the Three.js loop
+             let lastTime = 0;
+             function gameLoop(timestamp) {
+                const deltaTime = (timestamp - lastTime) / 1000; // Delta time in seconds
+                lastTime = timestamp;
+                // Clamp delta time to avoid large jumps if tab loses focus
+                const dt = Math.min(deltaTime, 1/20); // Max delta = 1/20th sec (50ms)
 
-             function gameLoop(timestamp) { // 2D Canvas Loop
-                // Calculate deltaTime (time since last frame)
-                const deltaTime = clock.getDelta(); // Use Three.js clock
+                // --- Update Game State ---
+                handlePlayerMovement(); // Moves player if gameActive
+                updateFallingSquares(); // Moves squares if gameActive
+                checkCollisions();      // Checks collisions if gameActive
+                updateSplitExplosion(dt); // Update explosion animation if active
+                // Update Confetti State (done within draw function now)
+                // Update 2D Feedback Timer
+                if (feedbackTimer > 0) { feedbackTimer -= dt * 60; if (feedbackTimer <= 0) { feedbackType = null; } }
 
-                // --- Update Game State (if active) ---
-                handlePlayerMovement();
-                updateFallingSquares();
-                checkCollisions();
-
-                // --- Update Confetti State ---
-                if (confettiActive) {
-                    confettiTimer -= deltaTime * 60; // Decrement based on frames approx
-                    if (confettiTimer <= 0) {
-                        confettiActive = false;
-                        // Don't cleanup immediately, let existing particles fade
-                    }
-                }
-
-                // --- Update 2D Feedback Timer ---
-                if (feedbackTimer > 0) {
-                    feedbackTimer -= deltaTime * 60; // Decrement based on frames approx
-                    if (feedbackTimer <= 0) { feedbackType = null; }
-                }
-
-
-                // --- Draw 2D Elements ---
+                // --- Draw ALL Elements ---
                 ctx.clearRect(0, 0, canvasWidth, canvasHeight); // Clear 2D canvas
-                drawBottomRectangle(); // Draws only if !threeExplosionActive
-                drawFallingSquares(); // Draws only if gameActive
-                updateAndDrawConfetti(deltaTime); // Update and draw confetti particles
+                drawBottomRectangle(); // Draws catcher only if !splitExplosionActive
+                drawFallingSquares();  // Draws squares if gameActive or splitExplosionActive
+                drawSplitExplosion();  // Draws exploding pieces if active
+                updateAndDrawConfetti(dt); // Update and draw confetti particles
 
-                // --- Request Next 2D Frame ---
+                // --- Request Next Frame ---
                 requestAnimationFrame(gameLoop);
-            }
-
-
-             function animateThree() { // Separate loop for Three.js rendering
-                // Only run loop if effects are active
-                if (!threeExplosionActive /* && !otherThreeEffects */ ) {
-                     threeAnimFrameId = null; // Stop requesting frames
-                     // Optional: Clear the 3D canvas explicitly if needed
-                     // renderer.clear();
-                     return;
-                }
-
-                threeAnimFrameId = requestAnimationFrame(animateThree); // Request next frame first
-
-                 const deltaTime = clock.getDelta(); // Get delta time again (or pass from gameLoop)
-
-                // Update 3D effects
-                updateThreeExplosion(deltaTime);
-                // Update other Three.js effects here if added
-
-                // Render 3D scene
-                renderer.render(scene, camera);
             }
 
 
             // --- Initialization ---
             function init() {
-                playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
-                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
-                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-
-                setupThreeScene(); // Initialize Three.js
-
+                // Initial player position setup is now inside resetGame or startNewRound logic
                 window.addEventListener('resize', () => {
                      canvasWidth = window.innerWidth; canvasHeight = window.innerHeight;
-                     // Resize 2D canvas
                      canvas.width = canvasWidth; canvas.height = canvasHeight;
-                     // Resize 3D canvas and camera
-                     camera.aspect = canvasWidth / canvasHeight;
-                     camera.updateProjectionMatrix();
-                     renderer.setSize(canvasWidth, canvasHeight);
-                     renderer.setPixelRatio(window.devicePixelRatio);
-
-                     // Recalculate player position
+                     // Recalculate player position based on new size
                      playerRect.y = canvasHeight - playerRect.baseHeight - 40;
                      playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-
-                     // Restart attempt if game was active or during explosion
-                     if (gameActive || threeExplosionActive) {
-                        restartAttemptInternal(); // Resets layout/squares
+                     // If resizing during explosion, simply restarting might be best
+                     if (splitExplosionActive) {
+                         resetGame(); // Or just restartAttemptInternal() if you want to keep the state
+                     } else if (gameActive) {
+                        // Maybe just recenter player and let existing squares fall?
+                        // For simplicity, let's restart the current attempt on resize
+                         restartAttemptInternal();
                      }
                 });
-
-                startNewRound();
-                updateUI();
-                gameLoop(); // Start the main 2D game loop
-                // animateThree(); // Start the 3D loop - it will self-regulate now
+                resetGame(); // Start the game initially using the reset function
+                lastTime = performance.now(); // Initialize lastTime for delta time calculation
+                gameLoop(lastTime); // Start the main loop
             }
 
             // --- Start ---
