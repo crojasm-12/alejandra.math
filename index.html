@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <title>Juego de Multiplicar con Fanfarria</title>
     <style>
-        /* ... (CSS styles remain largely the same) ... */
+        /* Existing styles */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Arial', sans-serif; overscroll-behavior: none; background-color: #0a0a1a; }
-        body { /* Space Background */ background-image: radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.1) 0%, transparent 30%), radial-gradient(circle at 80% 70%, rgba(221, 160, 221, 0.1) 0%, transparent 30%), radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 5%), radial-gradient(circle at 10% 10%, white 0.5px, transparent 1px), radial-gradient(circle at 50% 20%, white 0.5px, transparent 1px), radial-gradient(circle at 90% 30%, white 0.5px, transparent 1px), radial-gradient(circle at 30% 50%, white 0.5px, transparent 1px), radial-gradient(circle at 70% 60%, white 0.5px, transparent 1px), radial-gradient(circle at 15% 80%, white 0.5px, transparent 1px), radial-gradient(circle at 60% 90%, white 0.5px, transparent 1px), radial-gradient(circle at 85% 55%, white 0.5px, transparent 1px); background-size: cover; background-attachment: fixed; }
+        body { background-image: radial-gradient(circle at 20% 30%, rgba(173, 216, 230, 0.1) 0%, transparent 30%), radial-gradient(circle at 80% 70%, rgba(221, 160, 221, 0.1) 0%, transparent 30%), radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 5%), radial-gradient(circle at 10% 10%, white 0.5px, transparent 1px), radial-gradient(circle at 50% 20%, white 0.5px, transparent 1px), radial-gradient(circle at 90% 30%, white 0.5px, transparent 1px), radial-gradient(circle at 30% 50%, white 0.5px, transparent 1px), radial-gradient(circle at 70% 60%, white 0.5px, transparent 1px), radial-gradient(circle at 15% 80%, white 0.5px, transparent 1px), radial-gradient(circle at 60% 90%, white 0.5px, transparent 1px), radial-gradient(circle at 85% 55%, white 0.5px, transparent 1px); background-size: cover; background-attachment: fixed; }
         #scoreDisplay, #failuresDisplay, #levelDisplay, #newGameButton { position: absolute; padding: 10px 15px; border-radius: 8px; font-weight: bold; color: #333; text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); z-index: 10; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         #scoreDisplay, #failuresDisplay, #levelDisplay { font-size: 1.4em; }
         #scoreDisplay { top: 10px; left: 10px; background-color: #A0E7E5; }
@@ -18,14 +18,236 @@
         #gameCanvas, #threeCanvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #gameCanvas { z-index: 1; background-color: transparent; }
         #threeCanvas { z-index: 2; pointer-events: none; background-color: transparent; }
+        
+        /* Student registration and tracking styles */
+        #registrationOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        #registrationForm {
+            background-color: rgba(50, 50, 80, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 0 20px rgba(173, 216, 230, 0.5);
+        }
+        
+        #registrationForm h2 {
+            text-align: center;
+            color: #A0E7E5;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        
+        #studentsList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: rgba(30, 30, 50, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        #studentsList li {
+            padding: 5px 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(100, 100, 150, 0.3);
+            border-radius: 5px;
+        }
+        
+        #studentsList li:last-child {
+            margin-bottom: 0;
+        }
+        
+        #studentsList li button {
+            background-color: rgba(255, 100, 100, 0.7);
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #studentsList li button:hover {
+            background-color: rgba(255, 50, 50, 0.9);
+        }
+        
+        #newStudentInput {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+            box-sizing: border-box;
+        }
+        
+        #addStudentBtn, #startGameBtn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        
+        #addStudentBtn {
+            background-color: #B4F8C8;
+            color: #333;
+            margin-right: 10px;
+        }
+        
+        #addStudentBtn:hover {
+            background-color: #a3e4b3;
+        }
+        
+        #startGameBtn {
+            background-color: #FFAEBC;
+            color: #333;
+        }
+        
+        #startGameBtn:hover {
+            background-color: #ff9eac;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* Student leaderboard styles with gap after failures display */
+        #studentsLeaderboard {
+            position: absolute;
+            top: 110px; /* Below failures display with extra gap */
+            left: 10px;
+            width: 250px;
+            background-color: rgba(50, 50, 80, 0.8);
+            border-radius: 10px;
+            padding: 10px;
+            z-index: 5;
+            color: white;
+            display: none;
+        }
+        
+        #studentsLeaderboard h3 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #A0E7E5;
+        }
+        
+        #studentsTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        #studentsTable th, 
+        #studentsTable td {
+            padding: 5px;
+            text-align: center;
+            border-bottom: 1px solid rgba(173, 216, 230, 0.3);
+        }
+        
+        #studentsTable th {
+            background-color: rgba(100, 100, 150, 0.3);
+            color: #FFDAC1;
+        }
+        
+        #studentsTable tr.current {
+            background-color: rgba(180, 248, 200, 0.3);
+            font-weight: bold;
+        }
+        
+        #currentPlayerDisplay {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #FFAEBC;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.4em;
+            font-weight: bold;
+            z-index: 5;
+            display: none;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        
+        /* New copyright/author credit */
+        #authorCredit {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: rgba(200, 200, 200, 0.5);
+            font-size: 0.8em;
+            z-index: 5;
+        }
     </style>
 </head>
 <body>
-    <!-- UI Elements -->
+    <!-- Registration Overlay -->
+    <div id="registrationOverlay">
+        <div id="registrationForm">
+            <h2>Registro de Estudiantes</h2>
+            <ul id="studentsList"></ul>
+            <input type="text" id="newStudentInput" placeholder="Nombre del estudiante" />
+            <div class="actions">
+                <button id="addStudentBtn">Añadir Estudiante</button>
+                <button id="startGameBtn">Comenzar Juego</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Student Leaderboard -->
+    <div id="studentsLeaderboard">
+        <h3>Estudiantes</h3>
+        <table id="studentsTable">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Puntos</th>
+                    <th>Failures</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Current Player Display -->
+    <div id="currentPlayerDisplay"></div>
+    
+    <!-- Original UI Elements -->
     <div id="scoreDisplay">Score: 0</div>
-    <div id="failuresDisplay">Fallas: 0</div>
+    <div id="failuresDisplay">Failures: 0/3</div>
     <div id="levelDisplay">Level: 1</div>
     <button id="newGameButton">Nuevo Juego</button>
+    
+    <!-- Author Credit -->
+    <div id="authorCredit">Math Multiplication Practice By: Maria Alejandra Rodriguez</div>
 
     <!-- Canvas Elements -->
     <canvas id="gameCanvas"></canvas>
@@ -36,6 +258,602 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- Students Management ---
+            let students = [];
+            let currentStudentIndex = -1;
+            let gameStarted = false;
+            
+            // Registration elements
+            const registrationOverlay = document.getElementById('registrationOverlay');
+            const studentsList = document.getElementById('studentsList');
+            const newStudentInput = document.getElementById('newStudentInput');
+            const addStudentBtn = document.getElementById('addStudentBtn');
+            const startGameBtn = document.getElementById('startGameBtn');
+            
+            // Leaderboard elements
+            const studentsLeaderboard = document.getElementById('studentsLeaderboard');
+            const studentsTable = document.getElementById('studentsTable').querySelector('tbody');
+            const currentPlayerDisplay = document.getElementById('currentPlayerDisplay');
+            
+            // Add student functionality
+            function addStudent() {
+                const name = newStudentInput.value.trim();
+                if (name) {
+                    students.push({
+                        name: name,
+                        score: 0,
+                        failures: 0,
+                        active: true
+                    });
+                    
+                    updateStudentsList();
+                    newStudentInput.value = '';
+                }
+                newStudentInput.focus();
+            }
+            
+            // Update the students list in the registration form
+            function updateStudentsList() {
+                studentsList.innerHTML = '';
+                
+                students.forEach((student, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = student.name;
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.textContent = '×';
+                    removeBtn.addEventListener('click', () => {
+                        students.splice(index, 1);
+                        updateStudentsList();
+                    });
+                    
+                    li.appendChild(removeBtn);
+                    studentsList.appendChild(li);
+                });
+                
+                // Enable/disable start button based on if we have students
+                startGameBtn.disabled = students.length === 0;
+            }
+			// Update the leaderboard during the game
+            function updateLeaderboard() {
+                studentsTable.innerHTML = '';
+                
+                students.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    if (index === currentStudentIndex) {
+                        row.classList.add('current');
+                    }
+                    
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = student.name;
+                    
+                    const scoreCell = document.createElement('td');
+                    scoreCell.textContent = student.score;
+                    
+                    const failuresCell = document.createElement('td');
+                    failuresCell.textContent = student.failures;
+                    
+                    row.appendChild(nameCell);
+                    row.appendChild(scoreCell);
+                    row.appendChild(failuresCell);
+                    
+                    studentsTable.appendChild(row);
+                });
+                
+                // Update current player display
+                if (currentStudentIndex >= 0 && currentStudentIndex < students.length) {
+                    currentPlayerDisplay.textContent = students[currentStudentIndex].name;
+                }
+            }
+            
+			// Add these functions after the resetGame function:
+
+			// --- Draw Functions ---
+			function drawBottomRectangle() {
+				if (splitExplosionActive) return;
+				
+				const rectX = playerRect.x;
+				const rectY = playerRect.y;
+				const rectW = playerRect.width;
+				const rectH = playerRect.height;
+				
+				ctx.fillStyle = playerRect.color;
+				ctx.fillRect(rectX, rectY, rectW, rectH);
+				
+				ctx.strokeStyle = playerRect.gridLineColor;
+				ctx.lineWidth = playerRect.gridLineWidth * 2;
+				ctx.strokeRect(rectX, rectY, rectW, rectH);
+				
+				const cellWidth = rectW / currentProblem.factor1;
+				const cellHeight = rectH / currentProblem.factor2;
+				
+				ctx.lineWidth = playerRect.gridLineWidth;
+				ctx.strokeStyle = playerRect.gridLineColor;
+				
+				for (let i = 1; i < currentProblem.factor1; i++) {
+					ctx.beginPath();
+					ctx.moveTo(rectX + i * cellWidth, rectY);
+					ctx.lineTo(rectX + i * cellWidth, rectY + rectH);
+					ctx.stroke();
+				}
+				
+				for (let j = 1; j < currentProblem.factor2; j++) {
+					ctx.beginPath();
+					ctx.moveTo(rectX, rectY + j * cellHeight);
+					ctx.lineTo(rectX + rectW, rectY + j * cellHeight);
+					ctx.stroke();
+				}
+				
+				ctx.fillStyle = playerRect.labelColor;
+				ctx.font = playerRect.labelFont;
+				ctx.textAlign = 'center';
+				ctx.textBaseline = 'top';
+				ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5);
+				ctx.textAlign = 'left';
+				ctx.textBaseline = 'middle';
+				ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
+				
+				if (feedbackTimer > 0) {
+					ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7);
+					if (feedbackType === 'incorrect') {
+						ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+					} else if (feedbackType === 'correct') {
+						ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+					}
+					ctx.fillRect(rectX, rectY, rectW, rectH);
+					ctx.globalAlpha = 1.0;
+				}
+			}
+
+			function drawFallingSquares() {
+				if (!gameActive && !splitExplosionActive) return;
+				
+				fallingSquares.forEach(square => {
+					ctx.fillStyle = square.color;
+					ctx.fillRect(square.x, square.y, square.size, square.size);
+					
+					ctx.fillStyle = '#333';
+					ctx.font = `bold ${square.size * 0.45}px Arial`;
+					ctx.textAlign = 'center';
+					ctx.textBaseline = 'middle';
+					ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
+				});
+			}
+
+			// --- Confetti Functions ---
+			function createConfettiShower() {
+				const count = 150;
+				const sizeMin = 5; const sizeMax = 15;
+				const vyMin = 2; const vyMax = 5;
+
+				confettiParticles.length = 0; // Clear previous if starting new shower
+
+				for (let i = 0; i < count; i++) {
+					confettiParticles.push({
+						x: Math.random() * canvasWidth, // Start at random X across the top
+						y: -Math.random() * canvasHeight * 0.5 - sizeMax, // Start above screen, spread out vertically too
+						vx: (Math.random() - 0.5) * 2, // Slight sideways drift
+						vy: Math.random() * (vyMax - vyMin) + vyMin, // Initial downward velocity
+						color: getRandomPastelColor(),
+						size: Math.random() * (sizeMax - sizeMin) + sizeMin,
+						angle: Math.random() * Math.PI * 2,
+						angularVelocity: (Math.random() - 0.5) * 0.1,
+						life: 1.0 // Normalized lifetime
+					});
+				}
+			}
+
+			function updateAndDrawConfetti(dt) {
+				if (confettiParticles.length === 0) return;
+
+				const decayRate = dt / (confettiDuration / 60); // Decay based on duration
+				const timeFactor = dt * 60;
+
+				for (let i = confettiParticles.length - 1; i >= 0; i--) {
+					const p = confettiParticles[i];
+					p.x += p.vx * timeFactor;
+					p.y += p.vy * timeFactor;
+					p.vy += gravity * timeFactor; // Apply gravity
+					p.angle += p.angularVelocity * timeFactor;
+					p.life -= decayRate;
+
+					// Remove if faded or off bottom screen
+					if (p.life <= 0 || p.y > canvasHeight + p.size) {
+						confettiParticles.splice(i, 1);
+					} else {
+						// Wrap around horizontally if particle goes off sides
+						if (p.x > canvasWidth + p.size) p.x = -p.size;
+						else if (p.x < -p.size) p.x = canvasWidth + p.size;
+
+						ctx.save();
+						ctx.translate(p.x, p.y);
+						ctx.rotate(p.angle);
+						ctx.fillStyle = p.color;
+						ctx.globalAlpha = Math.max(0, p.life);
+						ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+						ctx.restore();
+					}
+				}
+				ctx.globalAlpha = 1.0;
+			}
+
+			function triggerLevelUpConfettiShower() {
+				confettiActive = true;
+				confettiTimer = confettiDuration;
+				createConfettiShower();
+			}
+
+			// --- Split Explosion Functions ---
+			function createSplitPieces() {
+				splitPieces = [];
+				const pieceW = playerRect.width / 2;
+				const pieceH = playerRect.height / 2;
+				const originX = playerRect.x;
+				const originY = playerRect.y;
+				const baseSpeed = 5;
+				
+				const positions = [
+					{ x: originX, y: originY },
+					{ x: originX + pieceW, y: originY },
+					{ x: originX, y: originY + pieceH },
+					{ x: originX + pieceW, y: originY + pieceH }
+				];
+				
+				positions.forEach((pos, index) => {
+					const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2);
+					const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2);
+					const angle = Math.atan2(centerOffsetY, centerOffsetX);
+					const speed = baseSpeed + Math.random() * 3;
+					
+					splitPieces.push({
+						x: pos.x,
+						y: pos.y,
+						w: pieceW,
+						h: pieceH,
+						vx: Math.cos(angle) * speed,
+						vy: Math.sin(angle) * speed - Math.random() * 3,
+						rotation: 0,
+						rotationSpeed: (Math.random() - 0.5) * 0.15,
+						color: playerRect.color
+					});
+				});
+			}
+
+			function updateSplitExplosion(dt) {
+				if (!splitExplosionActive) return;
+				
+				splitExplosionTimer++;
+				const timeFactor = dt * 60;
+				
+				for (let i = splitPieces.length - 1; i >= 0; i--) {
+					const piece = splitPieces[i];
+					piece.x += piece.vx * timeFactor;
+					piece.y += piece.vy * timeFactor;
+					piece.vy += gravity * timeFactor;
+					piece.vx *= damping;
+					piece.vy *= damping;
+					piece.rotation += piece.rotationSpeed * timeFactor;
+					
+					if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) {
+						splitPieces.splice(i, 1);
+					}
+				}
+				
+				if (splitExplosionTimer >= splitExplosionDuration) {
+					splitExplosionActive = false;
+					splitExplosionTimer = 0;
+					splitPieces.length = 0;
+					
+					// Only restart automatically if we haven't reached max failures
+					if (!gameStarted || failures < maxFailuresPerStudent) {
+						restartAttemptInternal();
+					}
+				}
+			}
+
+			function drawSplitExplosion() {
+				if (!splitExplosionActive) return;
+				
+				splitPieces.forEach(piece => {
+					ctx.save();
+					ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
+					ctx.rotate(piece.rotation);
+					ctx.fillStyle = piece.color;
+					ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+					ctx.restore();
+				});
+			}
+
+			// --- Game Loop ---
+			function gameLoop(timestamp) {
+				const dt = Math.min((timestamp - lastTime) / 1000, 1/20);
+				lastTime = timestamp;
+
+				// --- Update Game State ---
+				handlePlayerMovement();
+				updateFallingSquares();
+				checkCollisions();
+				updateSplitExplosion(dt);
+				
+				if (feedbackTimer > 0) {
+					feedbackTimer -= dt * 60;
+					if (feedbackTimer <= 0) {
+						feedbackType = null;
+					}
+				}
+
+				// --- Update Confetti Timer ---
+				const timeFactor = dt * 60;
+				if (confettiActive) {
+					confettiTimer -= timeFactor;
+					if (confettiTimer <= 0) confettiActive = false;
+				}
+
+				// --- Draw 2D Elements ---
+				ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+				drawBottomRectangle();
+				drawFallingSquares();
+				drawSplitExplosion();
+				updateAndDrawConfetti(dt);
+
+				requestAnimationFrame(gameLoop);
+			}
+
+			function animateThree() {
+				if (!sadFaceActive) {
+					threeAnimFrameId = null;
+					return;
+				}
+				
+				threeAnimFrameId = requestAnimationFrame(animateThree);
+				const dt = clock.getDelta();
+				updateSadFace(dt);
+				renderer.render(scene, camera);
+			}
+
+			function updateSadFace(dt) {
+				if (!sadFaceActive || !sadFaceMesh) return;
+				
+				const wobbleSpeed = 3;
+				const wobbleAmount = 0.5;
+				sadFaceMesh.rotation.z = Math.sin(clock.elapsedTime * wobbleSpeed) * wobbleAmount;
+				
+				const fadeStart = splitExplosionDuration * 0.6;
+				if (splitExplosionTimer > fadeStart) {
+					const fadeDuration = splitExplosionDuration - fadeStart;
+					const fadeProgress = (splitExplosionTimer - fadeStart) / fadeDuration;
+					sadFaceMesh.material.opacity = Math.max(0, 1.0 - fadeProgress);
+				} else {
+					sadFaceMesh.material.opacity = 1.0;
+				}
+			}
+
+			// --- Player Movement and Collision ---
+			function handlePlayerMovement() {
+				if (!gameActive) return;
+				
+				if (!isTouching) {
+					playerRect.dx = 0;
+					if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
+					if (keys.ArrowRight) playerRect.dx = playerRect.speed;
+					
+					let newX = playerRect.x + playerRect.dx;
+					playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width));
+				} else {
+					playerRect.dx = 0;
+				}
+			}
+
+			function updateFallingSquares() {
+				if (!gameActive) return;
+				
+				for (let i = fallingSquares.length - 1; i >= 0; i--) {
+					const square = fallingSquares[i];
+					square.y += square.speed;
+					
+					if (square.y > canvasHeight) {
+						fallingSquares.splice(i, 1);
+					}
+				}
+				
+				// Check if all squares are gone and we need to generate more
+				if (fallingSquares.length === 0 && gameActive) {
+					generateFallingSquares();
+				}
+			}
+
+			function checkCollisions() {
+				if (!gameActive) return;
+				
+				for (let i = fallingSquares.length - 1; i >= 0; i--) {
+					if (!fallingSquares[i]) continue;
+					const square = fallingSquares[i];
+					
+					const squareBottom = square.y + square.size;
+					const squareTop = square.y;
+					const squareLeft = square.x;
+					const squareRight = square.x + square.size;
+					
+					const rectTop = playerRect.y;
+					const rectLeft = playerRect.x;
+					const rectRight = playerRect.x + playerRect.width;
+					
+					const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
+
+					if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && 
+						squareRight > rectLeft && squareLeft < rectRight) {
+						
+						if (square.isCorrect) {
+							// Correct answer caught
+							score++;
+							let levelIncreased = false;
+							
+							if (score > 0 && score % 5 === 0 && level < maxLevel) {
+								level++;
+								levelIncreased = true;
+							}
+							
+							feedbackType = 'correct';
+							feedbackTimer = 15;
+
+							// Only trigger confetti on level up
+							if (levelIncreased) {
+								triggerLevelUpConfettiShower();
+							}
+
+							startNewRound(); // Resets problem, starts next wave
+							return;
+						} else {
+							// Incorrect answer caught
+							triggerIncorrectCatchSequence(square);
+							return;
+						}
+					}
+				}
+			}			
+			
+			function forceGameStart() {
+				// Clear any existing state
+				fallingSquares.length = 0;
+				splitPieces.length = 0;
+				
+				// Reset game flags
+				gameActive = true;
+				splitExplosionActive = false;
+				sadFaceActive = false;
+				if (sadFaceMesh) sadFaceMesh.visible = false;
+				
+				// Reset player rectangle
+				playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+				playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+				playerRect.width = playerRect.baseWidth;
+				playerRect.height = playerRect.baseHeight;
+				playerRect.color = getRandomPastelColor();
+				
+				// Generate a new problem
+				generateNewProblem();
+				
+				// Force a redraw
+				updateUI();
+				
+				// Generate new falling squares with a slight delay
+				setTimeout(() => {
+					generateFallingSquares();
+				}, 100);
+			}
+
+
+            // Modified Start Game function to ensure the game starts properly
+			function startGame() {
+				if (students.length === 0) {
+					alert('¡Añade al menos un estudiante para comenzar!');
+					return;
+				}
+				
+				gameStarted = true;
+				currentStudentIndex = 0;
+				
+				// Hide registration overlay
+				registrationOverlay.style.display = 'none';
+				
+				// Show leaderboard and current player
+				studentsLeaderboard.style.display = 'block';
+				currentPlayerDisplay.style.display = 'block';
+				
+				// Update leaderboard
+				updateLeaderboard();
+				
+				// Reset scores
+				score = 0;
+				failures = 0;
+				level = 1;
+				
+				// Force a complete game initialization
+				forceGameStart();
+			}
+            
+			
+            // Modified Reset Game for New Student function to ensure game elements are visible
+            function resetGameForNewStudent() {
+                // Reset game state
+                score = 0;
+                failures = 0;
+                level = 1;
+                
+                // Ensure sad face and other animations are hidden
+                sadFaceActive = false;
+                splitExplosionActive = false;
+                splitPieces.length = 0;
+                
+                if (sadFaceMesh) sadFaceMesh.visible = false;
+                
+                // Make sure the game is active
+                gameActive = true;
+                
+                // Reset player rectangle position
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                playerRect.color = getRandomPastelColor();
+                
+                // Update UI
+                updateUI();
+                
+                // Start a new round to ensure game elements are initialized
+                startNewRound();
+            }
+            
+            // Reset back to registration screen
+            function resetToRegistration() {
+                gameStarted = false;
+                students = [];
+                currentStudentIndex = -1;
+                
+                // Show registration overlay
+                registrationOverlay.style.display = 'flex';
+                
+                // Hide leaderboard and current player
+                studentsLeaderboard.style.display = 'none';
+                currentPlayerDisplay.style.display = 'none';
+                
+                // Clear students list
+                updateStudentsList();
+                
+                // Reset game
+                resetGame();
+            }
+            
+            // New function to restart the game with the same students
+            function restartGameWithSameStudents() {
+                // Reset all students' scores and failures
+                students.forEach(student => {
+                    student.score = 0;
+                    student.failures = 0;
+                    student.active = true;
+                });
+                
+                // Start with the first student
+                currentStudentIndex = 0;
+                
+                // Update the leaderboard
+                updateLeaderboard();
+                
+                // Reset game state for the first student
+                resetGameForNewStudent();
+            }
+            
+            // Event listeners for registration
+            addStudentBtn.addEventListener('click', addStudent);
+            startGameBtn.addEventListener('click', startGame);
+            
+            // Handle pressing Enter in the input field
+            newStudentInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    addStudent();
+                }
+            });
+
             // --- Canvas Setup ---
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
@@ -46,18 +864,18 @@
             const threeCanvas = document.getElementById('threeCanvas');
             let scene, camera, renderer, ambientLight, sadFaceMesh = null;
             let sadFaceActive = false; const clock = new THREE.Clock();
-            function setupThreeScene() { /* ... (same as previous) ... */
-                 scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000); camera.position.z = 50; renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true }); renderer.setSize(canvasWidth, canvasHeight); renderer.setPixelRatio(window.devicePixelRatio); ambientLight = new THREE.AmbientLight(0xffffff, 1.0); scene.add(ambientLight); sadFaceMesh = createSadFaceMesh(); sadFaceMesh.visible = false; scene.add(sadFaceMesh);
-             }
-            function createSadFaceTexture() { /* ... (same as previous) ... */
-                 const faceCanvas = document.createElement('canvas'); const faceCtx = faceCanvas.getContext('2d'); const size = 128; faceCanvas.width = size; faceCanvas.height = size; faceCtx.fillStyle = '#FFDD67'; faceCtx.beginPath(); faceCtx.arc(size / 2, size / 2, size * 0.45, 0, Math.PI * 2); faceCtx.fill(); faceCtx.lineWidth = size * 0.03; faceCtx.strokeStyle = '#333'; faceCtx.stroke(); faceCtx.fillStyle = '#333'; faceCtx.beginPath(); faceCtx.arc(size * 0.35, size * 0.4, size * 0.06, 0, Math.PI * 2); faceCtx.fill(); faceCtx.beginPath(); faceCtx.arc(size * 0.65, size * 0.4, size * 0.06, 0, Math.PI * 2); faceCtx.fill(); faceCtx.beginPath(); faceCtx.arc(size / 2, size * 0.75, size * 0.25, Math.PI * 0.1, Math.PI * 0.9, true); faceCtx.stroke(); return new THREE.CanvasTexture(faceCanvas);
-             }
-            function createSadFaceMesh() { /* ... (same as previous) ... */
-                 const texture = createSadFaceTexture(); const geometry = new THREE.PlaneGeometry(15, 15); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true }); return new THREE.Mesh(geometry, material);
-             }
-            function map2Dto3D(x2d, y2d) { /* ... (same as previous) ... */
-                 const scaleFactor = 0.1; const x3d = (x2d - canvasWidth / 2) * scaleFactor; const y3d = -(y2d - canvasHeight / 2) * scaleFactor; return new THREE.Vector3(x3d, y3d, 0);
-             }
+            function setupThreeScene() {
+                scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(75, canvasWidth / canvasHeight, 0.1, 1000); camera.position.z = 50; renderer = new THREE.WebGLRenderer({ canvas: threeCanvas, alpha: true, antialias: true }); renderer.setSize(canvasWidth, canvasHeight); renderer.setPixelRatio(window.devicePixelRatio); ambientLight = new THREE.AmbientLight(0xffffff, 1.0); scene.add(ambientLight); sadFaceMesh = createSadFaceMesh(); sadFaceMesh.visible = false; scene.add(sadFaceMesh);
+            }
+            function createSadFaceTexture() {
+                const faceCanvas = document.createElement('canvas'); const faceCtx = faceCanvas.getContext('2d'); const size = 128; faceCanvas.width = size; faceCanvas.height = size; faceCtx.fillStyle = '#FFDD67'; faceCtx.beginPath(); faceCtx.arc(size / 2, size / 2, size * 0.45, 0, Math.PI * 2); faceCtx.fill(); faceCtx.lineWidth = size * 0.03; faceCtx.strokeStyle = '#333'; faceCtx.stroke(); faceCtx.fillStyle = '#333'; faceCtx.beginPath(); faceCtx.arc(size * 0.35, size * 0.4, size * 0.06, 0, Math.PI * 2); faceCtx.fill(); faceCtx.beginPath(); faceCtx.arc(size * 0.65, size * 0.4, size * 0.06, 0, Math.PI * 2); faceCtx.fill(); faceCtx.beginPath(); faceCtx.arc(size / 2, size * 0.75, size * 0.25, Math.PI * 0.1, Math.PI * 0.9, true); faceCtx.stroke(); return new THREE.CanvasTexture(faceCanvas);
+            }
+            function createSadFaceMesh() {
+                const texture = createSadFaceTexture(); const geometry = new THREE.PlaneGeometry(15, 15); const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true }); return new THREE.Mesh(geometry, material);
+            }
+            function map2Dto3D(x2d, y2d) {
+                const scaleFactor = 0.1; const x3d = (x2d - canvasWidth / 2) * scaleFactor; const y3d = -(y2d - canvasHeight / 2) * scaleFactor; return new THREE.Vector3(x3d, y3d, 0);
+            }
 
             // --- UI Elements ---
             const scoreElement = document.getElementById('scoreDisplay');
@@ -71,12 +889,14 @@
             let gameActive = true; let feedbackTimer = 0; let feedbackType = null;
             let fullscreenRequested = false;
 
-            // --- UPDATE: Simplified Confetti State (Level Up Only) ---
-            let confettiActive = false; // Renamed from levelUpConfettiActive
-            let confettiParticles = []; // Renamed from levelUpConfettiParticles
-            const confettiDuration = 120; // Slightly longer duration for better effect
-            let confettiTimer = 0; // Renamed from levelUpConfettiTimer
-            // Removed correctCatchConfetti state variables
+            // --- Maximum failures per student ---
+            const maxFailuresPerStudent = 3;
+
+            // --- Confetti State ---
+            let confettiActive = false;
+            let confettiParticles = [];
+            const confettiDuration = 120;
+            let confettiTimer = 0;
 
             // --- 2D Split Explosion State ---
             let splitExplosionActive = false; let splitPieces = [];
@@ -87,14 +907,16 @@
             const pastelColors = ['#A0E7E5', '#B4F8C8', '#FBE7C6', '#FFAEBC', '#FFDAC1', '#CDB4DB', '#FFFACD', '#ADD8E6'];
             function getRandomPastelColor() { return pastelColors[Math.floor(Math.random() * pastelColors.length)]; }
             const failureColor = '#FF5733';
-            function getRandomInt(min, max) { /* ... */ return Math.floor(Math.random() * (max - min + 1)) + min; }
-            function shuffleArray(array) { /* ... */ for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
-            function isMobileDevice() { /* ... */ return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
-            function goFullScreen() { /* ... */ const element = document.documentElement; if (element.requestFullscreen) element.requestFullscreen(); else if (element.mozRequestFullScreen) element.mozRequestFullScreen(); else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen(); else if (element.msRequestFullscreen) element.msRequestFullscreen(); fullscreenRequested = true; }
+            function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+            function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+            function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
+            function goFullScreen() { const element = document.documentElement; if (element.requestFullscreen) element.requestFullscreen(); else if (element.mozRequestFullScreen) element.mozRequestFullScreen(); else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen(); else if (element.msRequestFullscreen) element.msRequestFullscreen(); fullscreenRequested = true; }
 
             // --- Player Catcher ---
             const originalBaseWidth = 150; const originalBaseHeight = 100;
-            const playerRect = { /* ... */ baseWidth: originalBaseWidth * 0.8, baseHeight: originalBaseHeight * 0.8, x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2, y: canvasHeight - (originalBaseHeight * 0.8) - 40, width: originalBaseWidth * 0.8, height: originalBaseHeight * 0.8, speed: 8, dx: 0, color: getRandomPastelColor(), gridLineWidth: 1, gridLineColor: 'rgba(50, 50, 50, 0.5)', labelFont: 'bold 14px Arial', labelColor: 'white' };
+            const playerRect = {
+                baseWidth: originalBaseWidth * 0.8, baseHeight: originalBaseHeight * 0.8, x: canvasWidth / 2 - (originalBaseWidth * 0.8) / 2, y: canvasHeight - (originalBaseHeight * 0.8) - 40, width: originalBaseWidth * 0.8, height: originalBaseHeight * 0.8, speed: 8, dx: 0, color: getRandomPastelColor(), gridLineWidth: 1, gridLineColor: 'rgba(50, 50, 50, 0.5)', labelFont: 'bold 14px Arial', labelColor: 'white'
+            };
 
             // --- Falling Squares ---
             const fallingSquares = []; const squareSize = 60; const baseFallSpeed = 1;
@@ -105,205 +927,474 @@
             const keys = { ArrowLeft: false, ArrowRight: false }; let isTouching = false; let touchX = 0;
             window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
             window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-            function handleTouchMove(clientX) { /* ... */ let newRectX = clientX - playerRect.width / 2; playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); }
-            canvas.addEventListener('touchstart', (e) => { /* ... */ e.preventDefault(); if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); } if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
-            canvas.addEventListener('touchmove', (e) => { /* ... */ e.preventDefault(); if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
+            function handleTouchMove(clientX) { let newRectX = clientX - playerRect.width / 2; playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); }
+            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); } if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
+            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
             canvas.addEventListener('touchend', () => { isTouching = false; }); canvas.addEventListener('touchcancel', () => { isTouching = false; });
-            newGameBtn.addEventListener('click', resetGame);
-
-            // --- Game Logic ---
-            function generateNewProblem() { /* ... (same) ... */ currentProblem.factor1 = getRandomInt(1, 9); currentProblem.factor2 = getRandomInt(1, 9); correctAnswer = currentProblem.factor1 * currentProblem.factor2; playerRect.color = getRandomPastelColor(); }
-            function generateFallingSquares() { /* ... (same) ... */
-                 fallingSquares.length = 0; let numberOfSquares = 5 + Math.floor(level / 2); const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement; let correctSquareIndex = getRandomInt(0, numberOfSquares - 1); const incorrectAnswers = new Set();
-                while (incorrectAnswers.size < numberOfSquares - 1) { let incorrect; if (Math.random() < 0.6 && correctAnswer > 1) { incorrect = correctAnswer + getRandomInt(-Math.min(correctAnswer - 1, 5), 5); if (incorrect === correctAnswer) incorrect++; } else { incorrect = getRandomInt(1, 9) * getRandomInt(1, 9); } if (incorrect !== correctAnswer && incorrect > 0 && !incorrectAnswers.has(incorrect)) { incorrectAnswers.add(incorrect); } } const incorrectArray = Array.from(incorrectAnswers); const maxNumberOfSlots = Math.floor(canvasWidth / requiredSlotWidth); let actualNumberOfSquares = numberOfSquares;
-                if (numberOfSquares > maxNumberOfSlots) { actualNumberOfSquares = maxNumberOfSlots; if (correctSquareIndex >= actualNumberOfSquares) { if (incorrectArray.length >= actualNumberOfSquares && actualNumberOfSquares > 0) { incorrectArray[actualNumberOfSquares - 1] = correctAnswer; correctSquareIndex = actualNumberOfSquares - 1; } else if (actualNumberOfSquares === 1) { correctSquareIndex = 0; } } } if (actualNumberOfSquares <= 0) return; const slotIndices = Array.from({ length: maxNumberOfSlots }, (_, k) => k); shuffleArray(slotIndices); const chosenSlots = slotIndices.slice(0, actualNumberOfSquares); const totalWidthUsed = maxNumberOfSlots * requiredSlotWidth; const offsetLeft = Math.max(0, (canvasWidth - totalWidthUsed) / 2);
-                for (let i = 0; i < actualNumberOfSquares; i++) { const isCorrect = (i === correctSquareIndex); let number = isCorrect ? correctAnswer : incorrectArray.pop(); if (typeof number === 'undefined' && isCorrect) number = correctAnswer; else if (typeof number === 'undefined') continue; const slotIndex = chosenSlots[i]; const slotCenterX = offsetLeft + (slotIndex * requiredSlotWidth) + (requiredSlotWidth / 2); const startX = slotCenterX - squareSize / 2; const clampedStartX = Math.max(0, Math.min(startX, canvasWidth - squareSize)); const speedVariation = 0.85 + Math.random() * 0.30; const individualSpeed = Math.max(0.5, levelBaseSpeed * speedVariation); fallingSquares.push({ x: clampedStartX, y: -(Math.random() * canvasHeight * 0.4 + squareSize * 1.5), size: squareSize, number: number, color: getRandomPastelColor(), speed: individualSpeed, isCorrect: isCorrect }); } incorrectArray.length = 0;
-             }
+            
+            // --- Modified: New Game Button now resets the game with same students ---
+            newGameBtn.addEventListener('click', () => {
+                if (!gameStarted) {
+                    resetGame();
+                } else {
+                    // Reset the game with the same students
+                    restartGameWithSameStudents();
+                }
+            });
+			// --- Game Logic ---
+            function generateNewProblem() {
+                currentProblem.factor1 = getRandomInt(1, 9);
+                currentProblem.factor2 = getRandomInt(1, 9);
+                correctAnswer = currentProblem.factor1 * currentProblem.factor2;
+                playerRect.color = getRandomPastelColor();
+            }
+            
+            function generateFallingSquares() {
+                fallingSquares.length = 0;
+                let numberOfSquares = 5 + Math.floor(level / 2);
+                const levelBaseSpeed = baseFallSpeed + (level - 1) * speedIncrement;
+                let correctSquareIndex = getRandomInt(0, numberOfSquares - 1);
+                const incorrectAnswers = new Set();
+                
+                while (incorrectAnswers.size < numberOfSquares - 1) {
+                    let incorrect;
+                    if (Math.random() < 0.6 && correctAnswer > 1) {
+                        incorrect = correctAnswer + getRandomInt(-Math.min(correctAnswer - 1, 5), 5);
+                        if (incorrect === correctAnswer) incorrect++;
+                    } else {
+                        incorrect = getRandomInt(1, 9) * getRandomInt(1, 9);
+                    }
+                    if (incorrect !== correctAnswer && incorrect > 0 && !incorrectAnswers.has(incorrect)) {
+                        incorrectAnswers.add(incorrect);
+                    }
+                }
+                
+                const incorrectArray = Array.from(incorrectAnswers);
+                const maxNumberOfSlots = Math.floor(canvasWidth / requiredSlotWidth);
+                let actualNumberOfSquares = numberOfSquares;
+                
+                if (numberOfSquares > maxNumberOfSlots) {
+                    actualNumberOfSquares = maxNumberOfSlots;
+                    if (correctSquareIndex >= actualNumberOfSquares) {
+                        if (incorrectArray.length >= actualNumberOfSquares && actualNumberOfSquares > 0) {
+                            incorrectArray[actualNumberOfSquares - 1] = correctAnswer;
+                            correctSquareIndex = actualNumberOfSquares - 1;
+                        } else if (actualNumberOfSquares === 1) {
+                            correctSquareIndex = 0;
+                        }
+                    }
+                }
+                
+                if (actualNumberOfSquares <= 0) return;
+                
+                const slotIndices = Array.from({ length: maxNumberOfSlots }, (_, k) => k);
+                shuffleArray(slotIndices);
+                const chosenSlots = slotIndices.slice(0, actualNumberOfSquares);
+                const totalWidthUsed = maxNumberOfSlots * requiredSlotWidth;
+                const offsetLeft = Math.max(0, (canvasWidth - totalWidthUsed) / 2);
+                
+                for (let i = 0; i < actualNumberOfSquares; i++) {
+                    const isCorrect = (i === correctSquareIndex);
+                    let number = isCorrect ? correctAnswer : incorrectArray.pop();
+                    
+                    if (typeof number === 'undefined' && isCorrect) number = correctAnswer;
+                    else if (typeof number === 'undefined') continue;
+                    
+                    const slotIndex = chosenSlots[i];
+                    const slotCenterX = offsetLeft + (slotIndex * requiredSlotWidth) + (requiredSlotWidth / 2);
+                    const startX = slotCenterX - squareSize / 2;
+                    const clampedStartX = Math.max(0, Math.min(startX, canvasWidth - squareSize));
+                    const speedVariation = 0.85 + Math.random() * 0.30;
+                    const individualSpeed = Math.max(0.5, levelBaseSpeed * speedVariation);
+                    
+                    fallingSquares.push({
+                        x: clampedStartX,
+                        y: -(Math.random() * canvasHeight * 0.4 + squareSize * 1.5),
+                        size: squareSize,
+                        number: number,
+                        color: getRandomPastelColor(),
+                        speed: individualSpeed,
+                        isCorrect: isCorrect
+                    });
+                }
+                
+                incorrectArray.length = 0;
+            }
 
             function startNewRound() {
                 gameActive = true;
                 splitExplosionActive = false; splitPieces.length = 0;
-                // Don't clear confetti immediately
                 sadFaceActive = false; if (sadFaceMesh) sadFaceMesh.visible = false;
                 feedbackType = null; feedbackTimer = 0;
-                generateNewProblem(); playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
-                generateFallingSquares(); updateUI();
+                generateNewProblem();
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                generateFallingSquares();
+                updateUI();
             }
 
             function restartAttemptInternal() {
                 gameActive = true;
                 splitExplosionActive = false; splitPieces.length = 0;
                 sadFaceActive = false; if (sadFaceMesh) sadFaceMesh.visible = false;
-                // Don't clear confetti
-                playerRect.width = playerRect.baseWidth; playerRect.height = playerRect.baseHeight;
-                generateFallingSquares(); updateUI();
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                generateFallingSquares();
+                updateUI();
             }
-
-            function triggerIncorrectCatchSequence(collidedSquare) { /* ... (same) ... */ gameActive = false; failures++; updateUI(); if (collidedSquare) { collidedSquare.color = failureColor; } feedbackType = 'incorrect'; feedbackTimer = 40; splitExplosionActive = true; splitExplosionTimer = 0; createSplitPieces(); if (sadFaceMesh) { const facePos3D = map2Dto3D(playerRect.x + playerRect.width / 2, playerRect.y - playerRect.height*0.5); sadFaceMesh.position.copy(facePos3D); sadFaceMesh.rotation.z = 0; sadFaceMesh.scale.set(1, 1, 1); sadFaceMesh.visible = true; sadFaceActive = true; animateThree(); } }
-            function updateUI() { /* ... (same) ... */ scoreElement.textContent = `Score: ${score}`; failuresElement.textContent = `Fallas: ${failures}`; levelElement.textContent = `Level: ${level}`; }
+            
+            // --- Trigger Incorrect Catch with Student Management ---
+            function triggerIncorrectCatchSequence(collidedSquare) {
+                gameActive = false;
+                failures++;
+                updateUI();
+                
+                if (collidedSquare) {
+                    collidedSquare.color = failureColor;
+                }
+                
+                feedbackType = 'incorrect';
+                feedbackTimer = 40;
+                splitExplosionActive = true;
+                splitExplosionTimer = 0;
+                createSplitPieces();
+                
+                if (sadFaceMesh) {
+                    const facePos3D = map2Dto3D(playerRect.x + playerRect.width / 2, playerRect.y - playerRect.height*0.5);
+                    sadFaceMesh.position.copy(facePos3D);
+                    sadFaceMesh.rotation.z = 0;
+                    sadFaceMesh.scale.set(1, 1, 1);
+                    sadFaceMesh.visible = true;
+                    sadFaceActive = true;
+                    animateThree();
+                }
+                
+                // Check if student has reached maximum failures
+                if (gameStarted && failures >= maxFailuresPerStudent) {
+                    // Set a timer to move to the next student after the animation
+                    setTimeout(() => {
+                        moveToNextStudent();
+                    }, 1500); // Wait for the animation to finish
+                }
+            }
+            
+            function updateUI() {
+                if (!gameStarted) {
+                    // Original game mode (not student-based)
+                    scoreElement.textContent = `Score: ${score}`;
+                    failuresElement.textContent = `Failures: ${failures}`;
+                } else {
+                    // Student-based game mode
+                    scoreElement.textContent = `Score: ${score}`;
+                    failuresElement.textContent = `Failures: ${failures}/${maxFailuresPerStudent}`;
+                }
+                levelElement.textContent = `Level: ${level}`;
+                
+                // Update student data in leaderboard
+                if (gameStarted && currentStudentIndex >= 0 && currentStudentIndex < students.length) {
+                    students[currentStudentIndex].score = score;
+                    students[currentStudentIndex].failures = failures;
+                    updateLeaderboard();
+                }
+            }
+            
+            // --- Reset Game Function ---
             function resetGame() {
-                console.log("Resetting game..."); score = 0; failures = 0; level = 1; fullscreenRequested = false;
-                splitExplosionActive = false; splitPieces.length = 0;
-                confettiActive = false; confettiParticles.length = 0; // UPDATE: Clear the single confetti state
-                sadFaceActive = false; if (sadFaceMesh) sadFaceMesh.visible = false;
-                feedbackTimer = 0; feedbackType = null; fallingSquares.length = 0;
-                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2; gameActive = true;
+                console.log("Resetting game...");
+                score = 0;
+                failures = 0;
+                level = 1;
+                fullscreenRequested = false;
+                
+                splitExplosionActive = false;
+                splitPieces.length = 0;
+                confettiActive = false;
+                confettiParticles.length = 0;
+                sadFaceActive = false;
+                
+                if (sadFaceMesh) sadFaceMesh.visible = false;
+                
+                feedbackTimer = 0;
+                feedbackType = null;
+                fallingSquares.length = 0;
+                
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                gameActive = true;
+                
                 startNewRound();
             }
 
-            // --- 2D Drawing Functions ---
-            function drawBottomRectangle() { /* ... (same) ... */
-                if (splitExplosionActive) return; const rectX = playerRect.x; const rectY = playerRect.y; const rectW = playerRect.width; const rectH = playerRect.height; ctx.fillStyle = playerRect.color; ctx.fillRect(rectX, rectY, rectW, rectH); ctx.strokeStyle = playerRect.gridLineColor; ctx.lineWidth = playerRect.gridLineWidth * 2; ctx.strokeRect(rectX, rectY, rectW, rectH); const cellWidth = rectW / currentProblem.factor1; const cellHeight = rectH / currentProblem.factor2; ctx.lineWidth = playerRect.gridLineWidth; ctx.strokeStyle = playerRect.gridLineColor; for (let i = 1; i < currentProblem.factor1; i++) { ctx.beginPath(); ctx.moveTo(rectX + i * cellWidth, rectY); ctx.lineTo(rectX + i * cellWidth, rectY + rectH); ctx.stroke(); } for (let j = 1; j < currentProblem.factor2; j++) { ctx.beginPath(); ctx.moveTo(rectX, rectY + j * cellHeight); ctx.lineTo(rectX + rectW, rectY + j * cellHeight); ctx.stroke(); } ctx.fillStyle = playerRect.labelColor; ctx.font = playerRect.labelFont; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2); if (feedbackTimer > 0) { ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7); if (feedbackType === 'incorrect') { ctx.fillStyle = 'rgba(255, 0, 0, 0.8)'; } else if (feedbackType === 'correct') { ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'; } ctx.fillRect(rectX, rectY, rectW, rectH); ctx.globalAlpha = 1.0; }
-             }
-            function drawFallingSquares() { /* ... (same) ... */
-                 if (!gameActive && !splitExplosionActive) return; fallingSquares.forEach(square => { ctx.fillStyle = square.color; ctx.fillRect(square.x, square.y, square.size, square.size); ctx.fillStyle = '#333'; ctx.font = `bold ${square.size * 0.45}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2); });
-             }
-
-            // --- UPDATE: Simplified Confetti Logic ---
-            function createConfettiShower() {
-                const count = 150;
-                const sizeMin = 5; const sizeMax = 15;
-                const vyMin = 2; const vyMax = 5;
-
-                confettiParticles.length = 0; // Clear previous if starting new shower
-
-                for (let i = 0; i < count; i++) {
-                    confettiParticles.push({
-                        x: Math.random() * canvasWidth, // Start at random X across the top
-                        y: -Math.random() * canvasHeight * 0.5 - sizeMax, // Start above screen, spread out vertically too
-                        vx: (Math.random() - 0.5) * 2, // Slight sideways drift
-                        vy: Math.random() * (vyMax - vyMin) + vyMin, // Initial downward velocity
-                        color: getRandomPastelColor(),
-                        size: Math.random() * (sizeMax - sizeMin) + sizeMin,
-                        angle: Math.random() * Math.PI * 2,
-                        angularVelocity: (Math.random() - 0.5) * 0.1,
-                        life: 1.0 // Normalized lifetime
+            // --- 2D Drawing Functions and other game functionality remain largely the same ---
+            
+            // --- Modified: Game Stats and Celebration ---
+            function showFinalGameStats() {
+                // Sort students by score (highest first)
+                const sortedStudents = [...students].sort((a, b) => b.score - a.score);
+                
+                // Create stats overlay
+                const statsOverlay = document.createElement('div');
+                statsOverlay.style.position = 'absolute';
+                statsOverlay.style.top = '0';
+                statsOverlay.style.left = '0';
+                statsOverlay.style.width = '100%';
+                statsOverlay.style.height = '100%';
+                statsOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                statsOverlay.style.zIndex = '30';
+                statsOverlay.style.display = 'flex';
+                statsOverlay.style.justifyContent = 'center';
+                statsOverlay.style.alignItems = 'center';
+                statsOverlay.style.color = 'white';
+                
+                // Create stats container
+                const statsContainer = document.createElement('div');
+                statsContainer.style.backgroundColor = 'rgba(50, 50, 80, 0.9)';
+                statsContainer.style.borderRadius = '15px';
+                statsContainer.style.padding = '30px';
+                statsContainer.style.width = '80%';
+                statsContainer.style.maxWidth = '600px';
+                statsContainer.style.boxShadow = '0 0 20px rgba(173, 216, 230, 0.5)';
+                
+                // Add title
+                const title = document.createElement('h2');
+                title.textContent = '¡Resultados Finales!';
+                title.style.textAlign = 'center';
+                title.style.color = '#A0E7E5';
+                title.style.marginTop = '0';
+                statsContainer.appendChild(title);
+                
+                // Add stats table
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.marginBottom = '20px';
+                
+                // Add table header
+                const thead = document.createElement('thead');
+                const headerRow = document.createElement('tr');
+                
+                const headers = ['Posición', 'Nombre', 'Puntos', 'Failures']; // Changed from "Fallas" to "Failures"
+                headers.forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    th.style.padding = '10px';
+                    th.style.backgroundColor = 'rgba(100, 100, 150, 0.3)';
+                    th.style.color = '#FFDAC1';
+                    headerRow.appendChild(th);
+                });
+                
+                thead.appendChild(headerRow);
+                table.appendChild(thead);
+                
+                // Add table body with student stats
+                const tbody = document.createElement('tbody');
+                sortedStudents.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    
+                    // Add medal emoji for top 3
+                    let position = `${index + 1}`;
+                    if (index === 0) position = '🥇 1';
+                    else if (index === 1) position = '🥈 2';
+                    else if (index === 2) position = '🥉 3';
+                    
+                    // Add position cell
+                    const posCell = document.createElement('td');
+                    posCell.textContent = position;
+                    posCell.style.textAlign = 'center';
+                    
+                    // Add name cell
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = student.name;
+                    
+                    // Add score cell
+                    const scoreCell = document.createElement('td');
+                    scoreCell.textContent = student.score;
+                    scoreCell.style.textAlign = 'center';
+                    
+                    // Add failures cell
+                    const failuresCell = document.createElement('td');
+                    failuresCell.textContent = student.failures;
+                    failuresCell.style.textAlign = 'center';
+                    
+                    // Highlight winner row
+                    if (index === 0) {
+                        row.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
+                        row.style.fontWeight = 'bold';
+                    }
+                    
+                    // Add cells to row
+                    row.appendChild(posCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(scoreCell);
+                    row.appendChild(failuresCell);
+                    
+                    // Add row to table body
+                    tbody.appendChild(row);
+                });
+                
+                table.appendChild(tbody);
+                statsContainer.appendChild(table);
+                
+                // Add action buttons
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style.display = 'flex';
+                actionsDiv.style.justifyContent = 'center';
+                actionsDiv.style.gap = '15px';
+                
+                // Play again button - now keeps student names
+                const playAgainBtn = document.createElement('button');
+                playAgainBtn.textContent = 'Jugar Otra Vez';
+                playAgainBtn.style.padding = '10px 15px';
+                playAgainBtn.style.border = 'none';
+                playAgainBtn.style.borderRadius = '5px';
+                playAgainBtn.style.fontWeight = 'bold';
+                playAgainBtn.style.cursor = 'pointer';
+                playAgainBtn.style.fontSize = '1em';
+                playAgainBtn.style.backgroundColor = '#B4F8C8';
+                playAgainBtn.style.color = '#333';
+                
+                playAgainBtn.addEventListener('click', () => {
+                    // Reset all students' scores
+                    students.forEach(student => {
+                        student.score = 0;
+                        student.failures = 0;
+                        student.active = true;
                     });
-                }
+                    
+                    // Remove stats overlay
+                    document.body.removeChild(statsOverlay);
+                    
+                    // Restart game with first student
+                    currentStudentIndex = 0;
+                    resetGameForNewStudent();
+                    
+                    // Show leaderboard and current player display
+                    studentsLeaderboard.style.display = 'block';
+                    currentPlayerDisplay.style.display = 'block';
+                    
+                    // Update leaderboard
+                    updateLeaderboard();
+                });
+                
+                // New students button
+                const newStudentsBtn = document.createElement('button');
+                newStudentsBtn.textContent = 'Nuevos Estudiantes';
+                newStudentsBtn.style.padding = '10px 15px';
+                newStudentsBtn.style.border = 'none';
+                newStudentsBtn.style.borderRadius = '5px';
+                newStudentsBtn.style.fontWeight = 'bold';
+                newStudentsBtn.style.cursor = 'pointer';
+                newStudentsBtn.style.fontSize = '1em';
+                newStudentsBtn.style.backgroundColor = '#FFAEBC';
+                newStudentsBtn.style.color = '#333';
+                
+                newStudentsBtn.addEventListener('click', () => {
+                    // Remove stats overlay
+                    document.body.removeChild(statsOverlay);
+                    
+                    // Go back to registration
+                    resetToRegistration();
+                });
+                
+                actionsDiv.appendChild(playAgainBtn);
+                actionsDiv.appendChild(newStudentsBtn);
+                statsContainer.appendChild(actionsDiv);
+                
+                // Add container to overlay
+                statsOverlay.appendChild(statsContainer);
+                
+                // Add overlay to body
+                document.body.appendChild(statsOverlay);
+                
+                // Trigger confetti for celebration
+                triggerLevelUpConfettiShower();
             }
-
-            function updateAndDrawConfetti(dt) { // Renamed from updateAndDrawConfettiParticles
-                if (confettiParticles.length === 0) return;
-
-                const decayRate = dt / (confettiDuration / 60); // Decay based on duration
-                const timeFactor = dt * 60;
-
-                for (let i = confettiParticles.length - 1; i >= 0; i--) {
-                    const p = confettiParticles[i];
-                    p.x += p.vx * timeFactor;
-                    p.y += p.vy * timeFactor;
-                    p.vy += gravity * timeFactor; // Apply gravity
-                    p.angle += p.angularVelocity * timeFactor;
-                    p.life -= decayRate;
-
-                    // Remove if faded or off bottom screen
-                    if (p.life <= 0 || p.y > canvasHeight + p.size) {
-                        confettiParticles.splice(i, 1);
-                    } else {
-                        // Wrap around horizontally if particle goes off sides
-                        if (p.x > canvasWidth + p.size) p.x = -p.size;
-                        else if (p.x < -p.size) p.x = canvasWidth + p.size;
-
-                        ctx.save();
-                        ctx.translate(p.x, p.y);
-                        ctx.rotate(p.angle);
-                        ctx.fillStyle = p.color;
-                        ctx.globalAlpha = Math.max(0, p.life);
-                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-                        ctx.restore();
-                    }
+            
+            // --- Modified: Move to Next Student with final stats ---
+            function moveToNextStudent() {
+                // Save current student's score/failures
+                if (currentStudentIndex >= 0 && currentStudentIndex < students.length) {
+                    students[currentStudentIndex].score = score;
+                    students[currentStudentIndex].failures = failures;
+                    students[currentStudentIndex].active = false;
                 }
-                ctx.globalAlpha = 1.0;
-            }
-
-            // Renamed Trigger Function
-            function triggerLevelUpConfettiShower() {
-                confettiActive = true;
-                confettiTimer = confettiDuration;
-                createConfettiShower(); // Call the shower creation function
-            }
-            // Removed triggerCorrectCatchConfetti
-
-            // --- 2D Split Explosion Logic ---
-            function createSplitPieces() { /* ... (same) ... */ splitPieces = []; const pieceW = playerRect.width / 2; const pieceH = playerRect.height / 2; const originX = playerRect.x; const originY = playerRect.y; const baseSpeed = 5; const positions = [{ x: originX, y: originY }, { x: originX + pieceW, y: originY }, { x: originX, y: originY + pieceH }, { x: originX + pieceW, y: originY + pieceH }]; positions.forEach((pos, index) => { const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2); const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2); const angle = Math.atan2(centerOffsetY, centerOffsetX); const speed = baseSpeed + Math.random() * 3; splitPieces.push({ x: pos.x, y: pos.y, w: pieceW, h: pieceH, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed - Math.random() * 3, rotation: 0, rotationSpeed: (Math.random() - 0.5) * 0.15, color: playerRect.color }); }); }
-            function updateSplitExplosion(dt) { /* ... (same) ... */ if (!splitExplosionActive) return; splitExplosionTimer++; const timeFactor = dt * 60; for (let i = splitPieces.length - 1; i >= 0; i--) { const piece = splitPieces[i]; piece.x += piece.vx * timeFactor; piece.y += piece.vy * timeFactor; piece.vy += gravity * timeFactor; piece.vx *= damping; piece.vy *= damping; piece.rotation += piece.rotationSpeed * timeFactor; if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) { splitPieces.splice(i, 1); } } if (splitExplosionTimer >= splitExplosionDuration) { splitExplosionActive = false; splitExplosionTimer = 0; splitPieces.length = 0; restartAttemptInternal(); } }
-            function drawSplitExplosion() { /* ... (same) ... */ if (!splitExplosionActive) return; splitPieces.forEach(piece => { ctx.save(); ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2); ctx.rotate(piece.rotation); ctx.fillStyle = piece.color; ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h); ctx.restore(); }); }
-
-            // --- Update & Collision (2D) ---
-            function handlePlayerMovement() { /* ... (same) ... */ if (!gameActive) return; if (!isTouching) { playerRect.dx = 0; if (keys.ArrowLeft) playerRect.dx = -playerRect.speed; if (keys.ArrowRight) playerRect.dx = playerRect.speed; let newX = playerRect.x + playerRect.dx; playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width)); } else { playerRect.dx = 0; } }
-            function updateFallingSquares() { /* ... (same) ... */ if (!gameActive) return; for (let i = fallingSquares.length - 1; i >= 0; i--) { const square = fallingSquares[i]; square.y += square.speed; if (square.y > canvasHeight) { fallingSquares.splice(i, 1); } } }
-            function checkCollisions() {
-                 if (!gameActive) return;
-                for (let i = fallingSquares.length - 1; i >= 0; i--) {
-                    if (!fallingSquares[i]) continue;
-                    const square = fallingSquares[i]; /* ... collision vars ... */
-                    const squareBottom = square.y + square.size; const squareTop = square.y; const squareLeft = square.x; const squareRight = square.x + square.size; const rectTop = playerRect.y; const rectLeft = playerRect.x; const rectRight = playerRect.x + playerRect.width; const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
-
-                    if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && squareRight > rectLeft && squareLeft < rectRight) {
-                        if (square.isCorrect) {
-                            score++; let levelIncreased = false;
-                            if (score > 0 && score % 5 === 0 && level < maxLevel) { level++; levelIncreased = true; }
-                            feedbackType = 'correct'; feedbackTimer = 15;
-
-                            // UPDATE: Only trigger confetti on level up
-                            if (levelIncreased) {
-                                triggerLevelUpConfettiShower(); // Call the renamed shower function
-                            }
-
-                            startNewRound(); // Resets problem, starts next wave
-                            return;
-                        } else {
-                            triggerIncorrectCatchSequence(square);
-                            return;
-                        }
-                    }
+                
+                // Find next student
+                currentStudentIndex++;
+                
+                // Check if we've gone through all students
+                if (currentStudentIndex >= students.length) {
+                    // Game over - all students have played
+                    showFinalGameStats();
+                    return;
                 }
-             }
-
-            // --- 3D Sad Face Animation ---
-             function updateSadFace(dt) { /* ... (same) ... */ if (!sadFaceActive || !sadFaceMesh) return; const wobbleSpeed = 3; const wobbleAmount = 0.5; sadFaceMesh.rotation.z = Math.sin(clock.elapsedTime * wobbleSpeed) * wobbleAmount; const fadeStart = splitExplosionDuration * 0.6; if (splitExplosionTimer > fadeStart) { const fadeDuration = splitExplosionDuration - fadeStart; const fadeProgress = (splitExplosionTimer - fadeStart) / fadeDuration; sadFaceMesh.material.opacity = Math.max(0, 1.0 - fadeProgress); } else { sadFaceMesh.material.opacity = 1.0; } }
-
-            // --- Main Animation Loops ---
-            let lastTime = 0; let threeAnimFrameId = null;
-
-            function gameLoop(timestamp) { // 2D Canvas Loop
-                const dt = Math.min((timestamp - lastTime) / 1000, 1/20); lastTime = timestamp;
-
-                // --- Update Game State ---
-                handlePlayerMovement(); updateFallingSquares(); checkCollisions();
-                updateSplitExplosion(dt);
-                if (feedbackTimer > 0) { feedbackTimer -= dt * 60; if (feedbackTimer <= 0) { feedbackType = null; } }
-
-                // --- Update Confetti Timer ---
-                const timeFactor = dt * 60;
-                if (confettiActive) { // Check the simplified 'confettiActive' flag
-                    confettiTimer -= timeFactor;
-                    if (confettiTimer <= 0) confettiActive = false; // Turn off when timer ends
-                }
-
-                // --- Draw 2D Elements ---
-                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-                drawBottomRectangle(); drawFallingSquares(); drawSplitExplosion();
-
-                // Update and Draw the single confetti type
-                updateAndDrawConfetti(dt); // Call the simplified update/draw function
-
-                requestAnimationFrame(gameLoop);
+                
+				sadFaceActive = false;
+				if (sadFaceMesh) sadFaceMesh.visible = false;
+				
+                // Update leaderboard
+                updateLeaderboard();
+                
+                // Reset game state for new student
+                resetGameForNewStudent();
             }
-
-            function animateThree() { /* ... (same) ... */ if (!sadFaceActive) { threeAnimFrameId = null; return; } threeAnimFrameId = requestAnimationFrame(animateThree); const dt = clock.getDelta(); updateSadFace(dt); renderer.render(scene, camera); }
-
+            
+            // --- Function to reposition UI elements based on screen size ---
+            function repositionUI() {
+                // Adjust student leaderboard position
+                if (canvasWidth < 700) {
+                    // For smaller screens, make leaderboard more compact
+                    studentsLeaderboard.style.width = '150px';
+                    studentsLeaderboard.style.fontSize = '0.9em';
+                } else {
+                    // For larger screens, give more space
+                    studentsLeaderboard.style.width = '250px';
+                    studentsLeaderboard.style.fontSize = '1em';
+                }
+                
+                // Ensure current player display is centered
+                currentPlayerDisplay.style.left = '50%';
+                
+                // Ensure standard game UI elements are properly positioned
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+            }
+            
             // --- Initialization ---
             function init() {
                 setupThreeScene();
+                
                 window.addEventListener('resize', () => {
-                     canvasWidth = window.innerWidth; canvasHeight = window.innerHeight; canvas.width = canvasWidth; canvas.height = canvasHeight;
-                     if (camera && renderer) { camera.aspect = canvasWidth / canvasHeight; camera.updateProjectionMatrix(); renderer.setSize(canvasWidth, canvasHeight); renderer.setPixelRatio(window.devicePixelRatio); }
-                     playerRect.y = canvasHeight - playerRect.baseHeight - 40; playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-                     if (splitExplosionActive || sadFaceActive) { resetGame(); } else if (gameActive) { restartAttemptInternal(); }
+                    canvasWidth = window.innerWidth;
+                    canvasHeight = window.innerHeight;
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+                    
+                    if (camera && renderer) {
+                        camera.aspect = canvasWidth / canvasHeight;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(canvasWidth, canvasHeight);
+                        renderer.setPixelRatio(window.devicePixelRatio);
+                    }
+                    
+                    playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                    playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                    
+                    // Reposition UI elements based on new screen size
+                    repositionUI();
+                    
+                    if (splitExplosionActive || sadFaceActive) {
+                        resetGame();
+                    } else if (gameActive) {
+                        restartAttemptInternal();
+                    }
                 });
-                resetGame(); lastTime = performance.now(); gameLoop(lastTime);
+                
+                // Show registration screen initially
+                resetToRegistration();
+                
+                lastTime = performance.now();
+                gameLoop(lastTime);
             }
+            
             // --- Start ---
             init();
         });
