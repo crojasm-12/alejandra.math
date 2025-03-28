@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="HandheldFriendly" content="true">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Juego de Multiplicar con Fanfarria</title>
     <style>
         /* Existing styles */
@@ -16,8 +19,17 @@
         #newGameButton { bottom: 10px; right: 10px; background-color: #B4F8C8; font-size: 1.1em; border: none; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.2); }
         #newGameButton:hover { background-color: #a3e4b3; }
         #gameCanvas, #threeCanvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        #gameCanvas { z-index: 1; background-color: transparent; }
-        #threeCanvas { z-index: 2; pointer-events: none; background-color: transparent; }
+        #gameCanvas { 
+            z-index: 1; 
+            background-color: transparent; 
+            touch-action: none; /* Prevent browser default touch actions */
+        }
+        #threeCanvas { 
+            z-index: 2; 
+            pointer-events: none; 
+            background-color: transparent;
+            touch-action: none; /* Prevent browser default touch actions */
+        }
         
         /* Student registration and tracking styles */
         #registrationOverlay {
@@ -255,8 +267,7 @@
 
     <!-- Three.js Library via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <script>
+	<script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- Students Management ---
             let students = [];
@@ -314,7 +325,8 @@
                 // Enable/disable start button based on if we have students
                 startGameBtn.disabled = students.length === 0;
             }
-			// Update the leaderboard during the game
+            
+            // Update the leaderboard during the game
             function updateLeaderboard() {
                 studentsTable.innerHTML = '';
                 
@@ -346,514 +358,6 @@
                 }
             }
             
-			// Add these functions after the resetGame function:
-
-			// --- Draw Functions ---
-			function drawBottomRectangle() {
-				if (splitExplosionActive) return;
-				
-				const rectX = playerRect.x;
-				const rectY = playerRect.y;
-				const rectW = playerRect.width;
-				const rectH = playerRect.height;
-				
-				ctx.fillStyle = playerRect.color;
-				ctx.fillRect(rectX, rectY, rectW, rectH);
-				
-				ctx.strokeStyle = playerRect.gridLineColor;
-				ctx.lineWidth = playerRect.gridLineWidth * 2;
-				ctx.strokeRect(rectX, rectY, rectW, rectH);
-				
-				const cellWidth = rectW / currentProblem.factor1;
-				const cellHeight = rectH / currentProblem.factor2;
-				
-				ctx.lineWidth = playerRect.gridLineWidth;
-				ctx.strokeStyle = playerRect.gridLineColor;
-				
-				for (let i = 1; i < currentProblem.factor1; i++) {
-					ctx.beginPath();
-					ctx.moveTo(rectX + i * cellWidth, rectY);
-					ctx.lineTo(rectX + i * cellWidth, rectY + rectH);
-					ctx.stroke();
-				}
-				
-				for (let j = 1; j < currentProblem.factor2; j++) {
-					ctx.beginPath();
-					ctx.moveTo(rectX, rectY + j * cellHeight);
-					ctx.lineTo(rectX + rectW, rectY + j * cellHeight);
-					ctx.stroke();
-				}
-				
-				ctx.fillStyle = playerRect.labelColor;
-				ctx.font = playerRect.labelFont;
-				ctx.textAlign = 'center';
-				ctx.textBaseline = 'top';
-				ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5);
-				ctx.textAlign = 'left';
-				ctx.textBaseline = 'middle';
-				ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
-				
-				if (feedbackTimer > 0) {
-					ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7);
-					if (feedbackType === 'incorrect') {
-						ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-					} else if (feedbackType === 'correct') {
-						ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-					}
-					ctx.fillRect(rectX, rectY, rectW, rectH);
-					ctx.globalAlpha = 1.0;
-				}
-			}
-
-			function drawFallingSquares() {
-				if (!gameActive && !splitExplosionActive) return;
-				
-				fallingSquares.forEach(square => {
-					ctx.fillStyle = square.color;
-					ctx.fillRect(square.x, square.y, square.size, square.size);
-					
-					ctx.fillStyle = '#333';
-					ctx.font = `bold ${square.size * 0.45}px Arial`;
-					ctx.textAlign = 'center';
-					ctx.textBaseline = 'middle';
-					ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
-				});
-			}
-
-			// --- Confetti Functions ---
-			function createConfettiShower() {
-				const count = 150;
-				const sizeMin = 5; const sizeMax = 15;
-				const vyMin = 2; const vyMax = 5;
-
-				confettiParticles.length = 0; // Clear previous if starting new shower
-
-				for (let i = 0; i < count; i++) {
-					confettiParticles.push({
-						x: Math.random() * canvasWidth, // Start at random X across the top
-						y: -Math.random() * canvasHeight * 0.5 - sizeMax, // Start above screen, spread out vertically too
-						vx: (Math.random() - 0.5) * 2, // Slight sideways drift
-						vy: Math.random() * (vyMax - vyMin) + vyMin, // Initial downward velocity
-						color: getRandomPastelColor(),
-						size: Math.random() * (sizeMax - sizeMin) + sizeMin,
-						angle: Math.random() * Math.PI * 2,
-						angularVelocity: (Math.random() - 0.5) * 0.1,
-						life: 1.0 // Normalized lifetime
-					});
-				}
-			}
-
-			function updateAndDrawConfetti(dt) {
-				if (confettiParticles.length === 0) return;
-
-				const decayRate = dt / (confettiDuration / 60); // Decay based on duration
-				const timeFactor = dt * 60;
-
-				for (let i = confettiParticles.length - 1; i >= 0; i--) {
-					const p = confettiParticles[i];
-					p.x += p.vx * timeFactor;
-					p.y += p.vy * timeFactor;
-					p.vy += gravity * timeFactor; // Apply gravity
-					p.angle += p.angularVelocity * timeFactor;
-					p.life -= decayRate;
-
-					// Remove if faded or off bottom screen
-					if (p.life <= 0 || p.y > canvasHeight + p.size) {
-						confettiParticles.splice(i, 1);
-					} else {
-						// Wrap around horizontally if particle goes off sides
-						if (p.x > canvasWidth + p.size) p.x = -p.size;
-						else if (p.x < -p.size) p.x = canvasWidth + p.size;
-
-						ctx.save();
-						ctx.translate(p.x, p.y);
-						ctx.rotate(p.angle);
-						ctx.fillStyle = p.color;
-						ctx.globalAlpha = Math.max(0, p.life);
-						ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-						ctx.restore();
-					}
-				}
-				ctx.globalAlpha = 1.0;
-			}
-
-			function triggerLevelUpConfettiShower() {
-				confettiActive = true;
-				confettiTimer = confettiDuration;
-				createConfettiShower();
-			}
-
-			// --- Split Explosion Functions ---
-			function createSplitPieces() {
-				splitPieces = [];
-				const pieceW = playerRect.width / 2;
-				const pieceH = playerRect.height / 2;
-				const originX = playerRect.x;
-				const originY = playerRect.y;
-				const baseSpeed = 5;
-				
-				const positions = [
-					{ x: originX, y: originY },
-					{ x: originX + pieceW, y: originY },
-					{ x: originX, y: originY + pieceH },
-					{ x: originX + pieceW, y: originY + pieceH }
-				];
-				
-				positions.forEach((pos, index) => {
-					const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2);
-					const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2);
-					const angle = Math.atan2(centerOffsetY, centerOffsetX);
-					const speed = baseSpeed + Math.random() * 3;
-					
-					splitPieces.push({
-						x: pos.x,
-						y: pos.y,
-						w: pieceW,
-						h: pieceH,
-						vx: Math.cos(angle) * speed,
-						vy: Math.sin(angle) * speed - Math.random() * 3,
-						rotation: 0,
-						rotationSpeed: (Math.random() - 0.5) * 0.15,
-						color: playerRect.color
-					});
-				});
-			}
-
-			function updateSplitExplosion(dt) {
-				if (!splitExplosionActive) return;
-				
-				splitExplosionTimer++;
-				const timeFactor = dt * 60;
-				
-				for (let i = splitPieces.length - 1; i >= 0; i--) {
-					const piece = splitPieces[i];
-					piece.x += piece.vx * timeFactor;
-					piece.y += piece.vy * timeFactor;
-					piece.vy += gravity * timeFactor;
-					piece.vx *= damping;
-					piece.vy *= damping;
-					piece.rotation += piece.rotationSpeed * timeFactor;
-					
-					if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) {
-						splitPieces.splice(i, 1);
-					}
-				}
-				
-				if (splitExplosionTimer >= splitExplosionDuration) {
-					splitExplosionActive = false;
-					splitExplosionTimer = 0;
-					splitPieces.length = 0;
-					
-					// Only restart automatically if we haven't reached max failures
-					if (!gameStarted || failures < maxFailuresPerStudent) {
-						restartAttemptInternal();
-					}
-				}
-			}
-
-			function drawSplitExplosion() {
-				if (!splitExplosionActive) return;
-				
-				splitPieces.forEach(piece => {
-					ctx.save();
-					ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
-					ctx.rotate(piece.rotation);
-					ctx.fillStyle = piece.color;
-					ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
-					ctx.restore();
-				});
-			}
-
-			// --- Game Loop ---
-			function gameLoop(timestamp) {
-				const dt = Math.min((timestamp - lastTime) / 1000, 1/20);
-				lastTime = timestamp;
-
-				// --- Update Game State ---
-				handlePlayerMovement();
-				updateFallingSquares();
-				checkCollisions();
-				updateSplitExplosion(dt);
-				
-				if (feedbackTimer > 0) {
-					feedbackTimer -= dt * 60;
-					if (feedbackTimer <= 0) {
-						feedbackType = null;
-					}
-				}
-
-				// --- Update Confetti Timer ---
-				const timeFactor = dt * 60;
-				if (confettiActive) {
-					confettiTimer -= timeFactor;
-					if (confettiTimer <= 0) confettiActive = false;
-				}
-
-				// --- Draw 2D Elements ---
-				ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-				drawBottomRectangle();
-				drawFallingSquares();
-				drawSplitExplosion();
-				updateAndDrawConfetti(dt);
-
-				requestAnimationFrame(gameLoop);
-			}
-
-			function animateThree() {
-				if (!sadFaceActive) {
-					threeAnimFrameId = null;
-					return;
-				}
-				
-				threeAnimFrameId = requestAnimationFrame(animateThree);
-				const dt = clock.getDelta();
-				updateSadFace(dt);
-				renderer.render(scene, camera);
-			}
-
-			function updateSadFace(dt) {
-				if (!sadFaceActive || !sadFaceMesh) return;
-				
-				const wobbleSpeed = 3;
-				const wobbleAmount = 0.5;
-				sadFaceMesh.rotation.z = Math.sin(clock.elapsedTime * wobbleSpeed) * wobbleAmount;
-				
-				const fadeStart = splitExplosionDuration * 0.6;
-				if (splitExplosionTimer > fadeStart) {
-					const fadeDuration = splitExplosionDuration - fadeStart;
-					const fadeProgress = (splitExplosionTimer - fadeStart) / fadeDuration;
-					sadFaceMesh.material.opacity = Math.max(0, 1.0 - fadeProgress);
-				} else {
-					sadFaceMesh.material.opacity = 1.0;
-				}
-			}
-
-			// --- Player Movement and Collision ---
-			function handlePlayerMovement() {
-				if (!gameActive) return;
-				
-				if (!isTouching) {
-					playerRect.dx = 0;
-					if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
-					if (keys.ArrowRight) playerRect.dx = playerRect.speed;
-					
-					let newX = playerRect.x + playerRect.dx;
-					playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width));
-				} else {
-					playerRect.dx = 0;
-				}
-			}
-
-			function updateFallingSquares() {
-				if (!gameActive) return;
-				
-				for (let i = fallingSquares.length - 1; i >= 0; i--) {
-					const square = fallingSquares[i];
-					square.y += square.speed;
-					
-					if (square.y > canvasHeight) {
-						fallingSquares.splice(i, 1);
-					}
-				}
-				
-				// Check if all squares are gone and we need to generate more
-				if (fallingSquares.length === 0 && gameActive) {
-					generateFallingSquares();
-				}
-			}
-
-			function checkCollisions() {
-				if (!gameActive) return;
-				
-				for (let i = fallingSquares.length - 1; i >= 0; i--) {
-					if (!fallingSquares[i]) continue;
-					const square = fallingSquares[i];
-					
-					const squareBottom = square.y + square.size;
-					const squareTop = square.y;
-					const squareLeft = square.x;
-					const squareRight = square.x + square.size;
-					
-					const rectTop = playerRect.y;
-					const rectLeft = playerRect.x;
-					const rectRight = playerRect.x + playerRect.width;
-					
-					const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
-
-					if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && 
-						squareRight > rectLeft && squareLeft < rectRight) {
-						
-						if (square.isCorrect) {
-							// Correct answer caught
-							score++;
-							let levelIncreased = false;
-							
-							if (score > 0 && score % 5 === 0 && level < maxLevel) {
-								level++;
-								levelIncreased = true;
-							}
-							
-							feedbackType = 'correct';
-							feedbackTimer = 15;
-
-							// Only trigger confetti on level up
-							if (levelIncreased) {
-								triggerLevelUpConfettiShower();
-							}
-
-							startNewRound(); // Resets problem, starts next wave
-							return;
-						} else {
-							// Incorrect answer caught
-							triggerIncorrectCatchSequence(square);
-							return;
-						}
-					}
-				}
-			}			
-			
-			function forceGameStart() {
-				// Clear any existing state
-				fallingSquares.length = 0;
-				splitPieces.length = 0;
-				
-				// Reset game flags
-				gameActive = true;
-				splitExplosionActive = false;
-				sadFaceActive = false;
-				if (sadFaceMesh) sadFaceMesh.visible = false;
-				
-				// Reset player rectangle
-				playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-				playerRect.y = canvasHeight - playerRect.baseHeight - 40;
-				playerRect.width = playerRect.baseWidth;
-				playerRect.height = playerRect.baseHeight;
-				playerRect.color = getRandomPastelColor();
-				
-				// Generate a new problem
-				generateNewProblem();
-				
-				// Force a redraw
-				updateUI();
-				
-				// Generate new falling squares with a slight delay
-				setTimeout(() => {
-					generateFallingSquares();
-				}, 100);
-			}
-
-
-            // Modified Start Game function to ensure the game starts properly
-			function startGame() {
-				if (students.length === 0) {
-					alert('¡Añade al menos un estudiante para comenzar!');
-					return;
-				}
-				
-				gameStarted = true;
-				currentStudentIndex = 0;
-				
-				// Hide registration overlay
-				registrationOverlay.style.display = 'none';
-				
-				// Show leaderboard and current player
-				studentsLeaderboard.style.display = 'block';
-				currentPlayerDisplay.style.display = 'block';
-				
-				// Update leaderboard
-				updateLeaderboard();
-				
-				// Reset scores
-				score = 0;
-				failures = 0;
-				level = 1;
-				
-				// Force a complete game initialization
-				forceGameStart();
-			}
-            
-			
-            // Modified Reset Game for New Student function to ensure game elements are visible
-            function resetGameForNewStudent() {
-                // Reset game state
-                score = 0;
-                failures = 0;
-                level = 1;
-                
-                // Ensure sad face and other animations are hidden
-                sadFaceActive = false;
-                splitExplosionActive = false;
-                splitPieces.length = 0;
-                
-                if (sadFaceMesh) sadFaceMesh.visible = false;
-                
-                // Make sure the game is active
-                gameActive = true;
-                
-                // Reset player rectangle position
-                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
-                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
-                playerRect.width = playerRect.baseWidth;
-                playerRect.height = playerRect.baseHeight;
-                playerRect.color = getRandomPastelColor();
-                
-                // Update UI
-                updateUI();
-                
-                // Start a new round to ensure game elements are initialized
-                startNewRound();
-            }
-            
-            // Reset back to registration screen
-            function resetToRegistration() {
-                gameStarted = false;
-                students = [];
-                currentStudentIndex = -1;
-                
-                // Show registration overlay
-                registrationOverlay.style.display = 'flex';
-                
-                // Hide leaderboard and current player
-                studentsLeaderboard.style.display = 'none';
-                currentPlayerDisplay.style.display = 'none';
-                
-                // Clear students list
-                updateStudentsList();
-                
-                // Reset game
-                resetGame();
-            }
-            
-            // New function to restart the game with the same students
-            function restartGameWithSameStudents() {
-                // Reset all students' scores and failures
-                students.forEach(student => {
-                    student.score = 0;
-                    student.failures = 0;
-                    student.active = true;
-                });
-                
-                // Start with the first student
-                currentStudentIndex = 0;
-                
-                // Update the leaderboard
-                updateLeaderboard();
-                
-                // Reset game state for the first student
-                resetGameForNewStudent();
-            }
-            
-            // Event listeners for registration
-            addStudentBtn.addEventListener('click', addStudent);
-            startGameBtn.addEventListener('click', startGame);
-            
-            // Handle pressing Enter in the input field
-            newStudentInput.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') {
-                    addStudent();
-                }
-            });
-
             // --- Canvas Setup ---
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
@@ -910,7 +414,18 @@
             function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
             function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
             function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
-            function goFullScreen() { const element = document.documentElement; if (element.requestFullscreen) element.requestFullscreen(); else if (element.mozRequestFullScreen) element.mozRequestFullScreen(); else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen(); else if (element.msRequestFullscreen) element.msRequestFullscreen(); fullscreenRequested = true; }
+            function goFullScreen() { 
+                const element = document.documentElement; 
+                try {
+                    if (element.requestFullscreen) element.requestFullscreen(); 
+                    else if (element.mozRequestFullScreen) element.mozRequestFullScreen(); 
+                    else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen(); 
+                    else if (element.msRequestFullscreen) element.msRequestFullscreen();
+                    fullscreenRequested = true;
+                } catch (error) {
+                    console.error("Fullscreen request failed:", error);
+                }
+            }
 
             // --- Player Catcher ---
             const originalBaseWidth = 150; const originalBaseHeight = 100;
@@ -923,14 +438,114 @@
             const speedIncrement = 0.3; const minGapBetweenSquares = playerRect.baseWidth;
             const requiredSlotWidth = squareSize + minGapBetweenSquares;
 
-            // --- Input Handling ---
-            const keys = { ArrowLeft: false, ArrowRight: false }; let isTouching = false; let touchX = 0;
-            window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
-            window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-            function handleTouchMove(clientX) { let newRectX = clientX - playerRect.width / 2; playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); }
-            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); } if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
-            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
-            canvas.addEventListener('touchend', () => { isTouching = false; }); canvas.addEventListener('touchcancel', () => { isTouching = false; });
+            // --- Enhanced Input Handling ---
+            const keys = { ArrowLeft: false, ArrowRight: false }; 
+            let isTouching = false; 
+            let isMouseDown = false;
+            let touchX = 0;
+            let mouseX = 0;
+            
+            // Keyboard events
+            window.addEventListener('keydown', (e) => { 
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = true; 
+            });
+            
+            window.addEventListener('keyup', (e) => { 
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = false; 
+            });
+            
+            // New comprehensive touch handling - removed the old handlers
+            function handleTouchStart(e) {
+                e.preventDefault(); // Prevent default behavior like scrolling
+                if (e.touches.length > 0) {
+                    isTouching = true;
+                    touchX = e.touches[0].clientX;
+                    movePaddle(touchX); // Immediately update position
+                }
+                
+                // Request fullscreen on first touch if on mobile
+                if (isMobileDevice() && !fullscreenRequested) {
+                    goFullScreen();
+                }
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                if (isTouching && e.touches.length > 0) {
+                    touchX = e.touches[0].clientX;
+                    movePaddle(touchX);
+                }
+            }
+
+            function handleTouchEnd(e) {
+                isTouching = false;
+            }
+
+            // Add mouse event handlers for better cross-device compatibility
+            function handleMouseDown(e) {
+                isMouseDown = true;
+                mouseX = e.clientX;
+                movePaddle(mouseX);
+            }
+
+            function handleMouseMove(e) {
+                if (isMouseDown) {
+                    mouseX = e.clientX;
+                    movePaddle(mouseX);
+                }
+            }
+
+            function handleMouseUp(e) {
+                isMouseDown = false;
+            }
+            
+            // Unified function to move the paddle with either touch or mouse
+            function movePaddle(inputX) {
+                let newRectX = inputX - playerRect.width / 2;
+                playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width));
+            }
+            
+            // Add all event listeners with proper settings for touch and pointer events
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', handleTouchEnd);
+            canvas.addEventListener('touchcancel', handleTouchEnd);
+
+            // Add mouse events
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseUp);
+            
+            // Add pointer events for better compatibility with smartboards and other devices
+            canvas.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+                    e.preventDefault();
+                    isMouseDown = true;
+                    mouseX = e.clientX;
+                    movePaddle(mouseX);
+                }
+            });
+            
+            canvas.addEventListener('pointermove', (e) => {
+                if ((e.pointerType === 'touch' || e.pointerType === 'pen') && isMouseDown) {
+                    e.preventDefault();
+                    mouseX = e.clientX;
+                    movePaddle(mouseX);
+                }
+            });
+            
+            canvas.addEventListener('pointerup', (e) => {
+                if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+                    isMouseDown = false;
+                }
+            });
+            
+            canvas.addEventListener('pointercancel', (e) => {
+                if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+                    isMouseDown = false;
+                }
+            });
             
             // --- Modified: New Game Button now resets the game with same students ---
             newGameBtn.addEventListener('click', () => {
@@ -1097,6 +712,96 @@
                     updateLeaderboard();
                 }
             }
+
+            function forceGameStart() {
+                // Clear any existing state
+                fallingSquares.length = 0;
+                splitPieces.length = 0;
+                
+                // Reset game flags
+                gameActive = true;
+                splitExplosionActive = false;
+                sadFaceActive = false;
+                if (sadFaceMesh) sadFaceMesh.visible = false;
+                
+                // Reset player rectangle
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                playerRect.color = getRandomPastelColor();
+                
+                // Generate a new problem
+                generateNewProblem();
+                
+                // Force a redraw
+                updateUI();
+                
+                // Generate new falling squares with a slight delay
+                setTimeout(() => {
+                    generateFallingSquares();
+                }, 100);
+            }
+
+            // Modified Start Game function to ensure the game starts properly
+            function startGame() {
+                if (students.length === 0) {
+                    alert('¡Añade al menos un estudiante para comenzar!');
+                    return;
+                }
+                
+                gameStarted = true;
+                currentStudentIndex = 0;
+                
+                // Hide registration overlay
+                registrationOverlay.style.display = 'none';
+                
+                // Show leaderboard and current player
+                studentsLeaderboard.style.display = 'block';
+                currentPlayerDisplay.style.display = 'block';
+                
+                // Update leaderboard
+                updateLeaderboard();
+                
+                // Reset scores
+                score = 0;
+                failures = 0;
+                level = 1;
+                
+                // Force a complete game initialization
+                forceGameStart();
+            }
+            
+            // Modified Reset Game for New Student function to ensure game elements are visible
+            function resetGameForNewStudent() {
+                // Reset game state
+                score = 0;
+                failures = 0;
+                level = 1;
+                
+                // Ensure sad face and other animations are hidden
+                sadFaceActive = false;
+                splitExplosionActive = false;
+                splitPieces.length = 0;
+                
+                if (sadFaceMesh) sadFaceMesh.visible = false;
+                
+                // Make sure the game is active
+                gameActive = true;
+                
+                // Reset player rectangle position
+                playerRect.x = canvasWidth / 2 - playerRect.baseWidth / 2;
+                playerRect.y = canvasHeight - playerRect.baseHeight - 40;
+                playerRect.width = playerRect.baseWidth;
+                playerRect.height = playerRect.baseHeight;
+                playerRect.color = getRandomPastelColor();
+                
+                // Update UI
+                updateUI();
+                
+                // Start a new round to ensure game elements are initialized
+                startNewRound();
+            }
             
             // --- Reset Game Function ---
             function resetGame() {
@@ -1123,10 +828,376 @@
                 
                 startNewRound();
             }
-
-            // --- 2D Drawing Functions and other game functionality remain largely the same ---
             
-            // --- Modified: Game Stats and Celebration ---
+            // Reset back to registration screen
+            function resetToRegistration() {
+                gameStarted = false;
+                students = [];
+                currentStudentIndex = -1;
+                
+                // Show registration overlay
+                registrationOverlay.style.display = 'flex';
+                
+                // Hide leaderboard and current player
+                studentsLeaderboard.style.display = 'none';
+                currentPlayerDisplay.style.display = 'none';
+                
+                // Clear students list
+                updateStudentsList();
+                
+                // Reset game
+                resetGame();
+            }
+            
+            // New function to restart the game with the same students
+            function restartGameWithSameStudents() {
+                // Reset all students' scores and failures
+                students.forEach(student => {
+                    student.score = 0;
+                    student.failures = 0;
+                    student.active = true;
+                });
+                
+                // Start with the first student
+                currentStudentIndex = 0;
+                
+                // Update the leaderboard
+                updateLeaderboard();
+                
+                // Reset game state for the first student
+                resetGameForNewStudent();
+            }
+            
+            // Event listeners for registration
+            addStudentBtn.addEventListener('click', addStudent);
+            startGameBtn.addEventListener('click', startGame);
+            
+            // Handle pressing Enter in the input field
+            newStudentInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') {
+                    addStudent();
+                }
+            });
+
+            // --- Draw Functions ---
+            function drawBottomRectangle() {
+                if (splitExplosionActive) return;
+                
+                const rectX = playerRect.x;
+                const rectY = playerRect.y;
+                const rectW = playerRect.width;
+                const rectH = playerRect.height;
+                
+                ctx.fillStyle = playerRect.color;
+                ctx.fillRect(rectX, rectY, rectW, rectH);
+                
+                ctx.strokeStyle = playerRect.gridLineColor;
+                ctx.lineWidth = playerRect.gridLineWidth * 2;
+                ctx.strokeRect(rectX, rectY, rectW, rectH);
+                
+                const cellWidth = rectW / currentProblem.factor1;
+                const cellHeight = rectH / currentProblem.factor2;
+                
+                ctx.lineWidth = playerRect.gridLineWidth;
+                ctx.strokeStyle = playerRect.gridLineColor;
+                
+                for (let i = 1; i < currentProblem.factor1; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(rectX + i * cellWidth, rectY);
+                    ctx.lineTo(rectX + i * cellWidth, rectY + rectH);
+                    ctx.stroke();
+                }
+                
+                for (let j = 1; j < currentProblem.factor2; j++) {
+                    ctx.beginPath();
+                    ctx.moveTo(rectX, rectY + j * cellHeight);
+                    ctx.lineTo(rectX + rectW, rectY + j * cellHeight);
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = playerRect.labelColor;
+                ctx.font = playerRect.labelFont;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`${currentProblem.factor1}`, rectX + rectW - cellWidth / 2, rectY + rectH + 5);
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${currentProblem.factor2}`, rectX + rectW + 5, rectY + rectH - cellHeight / 2);
+                
+                if (feedbackTimer > 0) {
+                    ctx.globalAlpha = Math.max(0, (feedbackTimer / 40) * 0.7);
+                    if (feedbackType === 'incorrect') {
+                        ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+                    } else if (feedbackType === 'correct') {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    }
+                    ctx.fillRect(rectX, rectY, rectW, rectH);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            function drawFallingSquares() {
+                if (!gameActive && !splitExplosionActive) return;
+                
+                fallingSquares.forEach(square => {
+                    ctx.fillStyle = square.color;
+                    ctx.fillRect(square.x, square.y, square.size, square.size);
+                    
+                    ctx.fillStyle = '#333';
+                    ctx.font = `bold ${square.size * 0.45}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(square.number, square.x + square.size / 2, square.y + square.size / 2 + 2);
+                });
+            }
+
+            // --- Confetti Functions ---
+            function createConfettiShower() {
+                const count = 150;
+                const sizeMin = 5; const sizeMax = 15;
+                const vyMin = 2; const vyMax = 5;
+
+                confettiParticles.length = 0; // Clear previous if starting new shower
+
+                for (let i = 0; i < count; i++) {
+                    confettiParticles.push({
+                        x: Math.random() * canvasWidth, // Start at random X across the top
+                        y: -Math.random() * canvasHeight * 0.5 - sizeMax, // Start above screen, spread out vertically too
+                        vx: (Math.random() - 0.5) * 2, // Slight sideways drift
+                        vy: Math.random() * (vyMax - vyMin) + vyMin, // Initial downward velocity
+                        color: getRandomPastelColor(),
+                        size: Math.random() * (sizeMax - sizeMin) + sizeMin,
+                        angle: Math.random() * Math.PI * 2,
+                        angularVelocity: (Math.random() - 0.5) * 0.1,
+                        life: 1.0 // Normalized lifetime
+                    });
+                }
+            }
+
+            function updateAndDrawConfetti(dt) {
+                if (confettiParticles.length === 0) return;
+
+                const decayRate = dt / (confettiDuration / 60); // Decay based on duration
+                const timeFactor = dt * 60;
+
+                for (let i = confettiParticles.length - 1; i >= 0; i--) {
+                    const p = confettiParticles[i];
+                    p.x += p.vx * timeFactor;
+                    p.y += p.vy * timeFactor;
+                    p.vy += gravity * timeFactor; // Apply gravity
+                    p.angle += p.angularVelocity * timeFactor;
+                    p.life -= decayRate;
+
+                    // Remove if faded or off bottom screen
+                    if (p.life <= 0 || p.y > canvasHeight + p.size) {
+                        confettiParticles.splice(i, 1);
+                    } else {
+                        // Wrap around horizontally if particle goes off sides
+                        if (p.x > canvasWidth + p.size) p.x = -p.size;
+                        else if (p.x < -p.size) p.x = canvasWidth + p.size;
+
+                        ctx.save();
+                        ctx.translate(p.x, p.y);
+                        ctx.rotate(p.angle);
+                        ctx.fillStyle = p.color;
+                        ctx.globalAlpha = Math.max(0, p.life);
+                        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                        ctx.restore();
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+            }
+
+            function triggerLevelUpConfettiShower() {
+                confettiActive = true;
+                confettiTimer = confettiDuration;
+                createConfettiShower();
+            }
+
+            // --- Split Explosion Functions ---
+            function createSplitPieces() {
+                splitPieces = [];
+                const pieceW = playerRect.width / 2;
+                const pieceH = playerRect.height / 2;
+                const originX = playerRect.x;
+                const originY = playerRect.y;
+                const baseSpeed = 5;
+                
+                const positions = [
+                    { x: originX, y: originY },
+                    { x: originX + pieceW, y: originY },
+                    { x: originX, y: originY + pieceH },
+                    { x: originX + pieceW, y: originY + pieceH }
+                ];
+                
+                positions.forEach((pos, index) => {
+                    const centerOffsetX = (pos.x + pieceW/2) - (originX + playerRect.width/2);
+                    const centerOffsetY = (pos.y + pieceH/2) - (originY + playerRect.height/2);
+                    const angle = Math.atan2(centerOffsetY, centerOffsetX);
+                    const speed = baseSpeed + Math.random() * 3;
+                    
+                    splitPieces.push({
+                        x: pos.x,
+                        y: pos.y,
+                        w: pieceW,
+                        h: pieceH,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - Math.random() * 3,
+                        rotation: 0,
+                        rotationSpeed: (Math.random() - 0.5) * 0.15,
+                        color: playerRect.color
+                    });
+                });
+            }
+
+            function updateSplitExplosion(dt) {
+                if (!splitExplosionActive) return;
+                
+                splitExplosionTimer++;
+                const timeFactor = dt * 60;
+                
+                for (let i = splitPieces.length - 1; i >= 0; i--) {
+                    const piece = splitPieces[i];
+                    piece.x += piece.vx * timeFactor;
+                    piece.y += piece.vy * timeFactor;
+                    piece.vy += gravity * timeFactor;
+                    piece.vx *= damping;
+                    piece.vy *= damping;
+                    piece.rotation += piece.rotationSpeed * timeFactor;
+                    
+                    if (piece.y > canvasHeight + piece.h * 2 || piece.x < -piece.w * 2 || piece.x > canvasWidth + piece.w * 2) {
+                        splitPieces.splice(i, 1);
+                    }
+                }
+                
+                if (splitExplosionTimer >= splitExplosionDuration) {
+                    splitExplosionActive = false;
+                    splitExplosionTimer = 0;
+                    splitPieces.length = 0;
+                    
+                    // Only restart automatically if we haven't reached max failures
+                    if (!gameStarted || failures < maxFailuresPerStudent) {
+                        restartAttemptInternal();
+                    }
+                }
+            }
+
+            function drawSplitExplosion() {
+                if (!splitExplosionActive) return;
+                
+                splitPieces.forEach(piece => {
+                    ctx.save();
+                    ctx.translate(piece.x + piece.w / 2, piece.y + piece.h / 2);
+                    ctx.rotate(piece.rotation);
+                    ctx.fillStyle = piece.color;
+                    ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+                    ctx.restore();
+                });
+            }
+
+            // --- Player Movement and Collision ---
+            function handlePlayerMovement() {
+                if (!gameActive) return;
+                
+                // We now use touch/mouse movement from the event handlers
+                // This function just handles keyboard movement
+                if (!isTouching && !isMouseDown) {
+                    playerRect.dx = 0;
+                    if (keys.ArrowLeft) playerRect.dx = -playerRect.speed;
+                    if (keys.ArrowRight) playerRect.dx = playerRect.speed;
+                    
+                    let newX = playerRect.x + playerRect.dx;
+                    playerRect.x = Math.max(0, Math.min(newX, canvasWidth - playerRect.width));
+                }
+            }
+
+            function updateFallingSquares() {
+                if (!gameActive) return;
+                
+                for (let i = fallingSquares.length - 1; i >= 0; i--) {
+                    const square = fallingSquares[i];
+                    square.y += square.speed;
+                    
+                    if (square.y > canvasHeight) {
+                        fallingSquares.splice(i, 1);
+                    }
+                }
+                
+                // Check if all squares are gone and we need to generate more
+                if (fallingSquares.length === 0 && gameActive) {
+                    generateFallingSquares();
+                }
+            }
+
+            function checkCollisions() {
+                if (!gameActive) return;
+                
+                for (let i = fallingSquares.length - 1; i >= 0; i--) {
+                    if (!fallingSquares[i]) continue;
+                    const square = fallingSquares[i];
+                    
+                    const squareBottom = square.y + square.size;
+                    const squareTop = square.y;
+                    const squareLeft = square.x;
+                    const squareRight = square.x + square.size;
+                    
+                    const rectTop = playerRect.y;
+                    const rectLeft = playerRect.x;
+                    const rectRight = playerRect.x + playerRect.width;
+                    
+                    const collisionTolerance = square.speed > 0 ? square.speed + 2 : 3;
+
+                    if (squareBottom >= rectTop && squareTop < rectTop + collisionTolerance && 
+                        squareRight > rectLeft && squareLeft < rectRight) {
+                        
+                        if (square.isCorrect) {
+                            // Correct answer caught
+                            score++;
+                            let levelIncreased = false;
+                            
+                            if (score > 0 && score % 5 === 0 && level < maxLevel) {
+                                level++;
+                                levelIncreased = true;
+                            }
+                            
+                            feedbackType = 'correct';
+                            feedbackTimer = 15;
+
+                            // Only trigger confetti on level up
+                            if (levelIncreased) {
+                                triggerLevelUpConfettiShower();
+                            }
+
+                            startNewRound(); // Resets problem, starts next wave
+                            return;
+                        } else {
+                            // Incorrect answer caught
+                            triggerIncorrectCatchSequence(square);
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // --- Update Sad Face Animation ---
+            function updateSadFace(dt) {
+                if (!sadFaceActive || !sadFaceMesh) return;
+                
+                const wobbleSpeed = 3;
+                const wobbleAmount = 0.5;
+                sadFaceMesh.rotation.z = Math.sin(clock.elapsedTime * wobbleSpeed) * wobbleAmount;
+                
+                const fadeStart = splitExplosionDuration * 0.6;
+                if (splitExplosionTimer > fadeStart) {
+                    const fadeDuration = splitExplosionDuration - fadeStart;
+                    const fadeProgress = (splitExplosionTimer - fadeStart) / fadeDuration;
+                    sadFaceMesh.material.opacity = Math.max(0, 1.0 - fadeProgress);
+                } else {
+                    sadFaceMesh.material.opacity = 1.0;
+                }
+            }
+
+            // --- Final Game Stats ---
             function showFinalGameStats() {
                 // Sort students by score (highest first)
                 const sortedStudents = [...students].sort((a, b) => b.score - a.score);
@@ -1197,6 +1268,37 @@
                     else if (index === 2) position = '🥉 3';
                     
                     // Add position cell
+                    const posCell = document.createElement('td');
+                    posCell.textContent = position;
+                    posCell.style.textAlign = 'center';
+                    
+                    // Add name cell
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = student.name;
+                    
+                    // Add score cell
+                    const scoreCell = document.createElement('td');
+                    scoreCell.textContent = student.score;
+                    scoreCell.style.textAlign = 'center';
+                    
+                    // Add failures cell
+                    const failuresCell = document.createElement('td');
+                    failuresCell.textContent = student.failures;
+                    failuresCell.style.textAlign = 'center';
+                    
+                    // Highlight winner row
+                    if (index === 0) {
+                        row.style.backgroundColor = 'rgba(255, 215, 0, 0.2)';
+                        row.style.fontWeight = 'bold';
+                    }
+                    
+                    // Add cells to row
+                    row.appendChild(posCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(scoreCell);
+                    row.appendChild(failuresCell)
+					
+					// Add position cell
                     const posCell = document.createElement('td');
                     posCell.textContent = position;
                     posCell.style.textAlign = 'center';
@@ -1328,9 +1430,9 @@
                     return;
                 }
                 
-				sadFaceActive = false;
-				if (sadFaceMesh) sadFaceMesh.visible = false;
-				
+                sadFaceActive = false;
+                if (sadFaceMesh) sadFaceMesh.visible = false;
+                
                 // Update leaderboard
                 updateLeaderboard();
                 
@@ -1358,6 +1460,56 @@
                 playerRect.y = canvasHeight - playerRect.baseHeight - 40;
             }
             
+            // --- Main Game Loop ---
+            let lastTime = 0;
+            let threeAnimFrameId = null;
+
+            function gameLoop(timestamp) {
+                const dt = Math.min((timestamp - lastTime) / 1000, 1/20);
+                lastTime = timestamp;
+
+                // --- Update Game State ---
+                handlePlayerMovement();
+                updateFallingSquares();
+                checkCollisions();
+                updateSplitExplosion(dt);
+                
+                if (feedbackTimer > 0) {
+                    feedbackTimer -= dt * 60;
+                    if (feedbackTimer <= 0) {
+                        feedbackType = null;
+                    }
+                }
+
+                // --- Update Confetti Timer ---
+                const timeFactor = dt * 60;
+                if (confettiActive) {
+                    confettiTimer -= timeFactor;
+                    if (confettiTimer <= 0) confettiActive = false;
+                }
+
+                // --- Draw 2D Elements ---
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                drawBottomRectangle();
+                drawFallingSquares();
+                drawSplitExplosion();
+                updateAndDrawConfetti(dt);
+
+                requestAnimationFrame(gameLoop);
+            }
+
+            function animateThree() {
+                if (!sadFaceActive) {
+                    threeAnimFrameId = null;
+                    return;
+                }
+                
+                threeAnimFrameId = requestAnimationFrame(animateThree);
+                const dt = clock.getDelta();
+                updateSadFace(dt);
+                renderer.render(scene, camera);
+            }
+
             // --- Initialization ---
             function init() {
                 setupThreeScene();
