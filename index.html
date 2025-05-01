@@ -910,6 +910,7 @@
             function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
             function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
             function isMobileDevice() { return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent); }
+            function isSmartBoard() { return /SMART Board/i.test(navigator.userAgent) || document.documentElement.classList.contains('smart-board'); }
             function goFullScreen() { const element = document.documentElement; if (element.requestFullscreen) element.requestFullscreen(); else if (element.mozRequestFullScreen) element.mozRequestFullScreen(); else if (element.webkitRequestFullscreen) element.webkitRequestFullscreen(); else if (element.msRequestFullscreen) element.msRequestFullscreen(); fullscreenRequested = true; }
 
             // --- Player Catcher ---
@@ -924,13 +925,131 @@
             const requiredSlotWidth = squareSize + minGapBetweenSquares;
 
             // --- Input Handling ---
-            const keys = { ArrowLeft: false, ArrowRight: false }; let isTouching = false; let touchX = 0;
-            window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
-            window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-            function handleTouchMove(clientX) { let newRectX = clientX - playerRect.width / 2; playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width)); }
-            canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if (isMobileDevice() && !fullscreenRequested) { goFullScreen(); } if (e.touches.length > 0) { isTouching = true; touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
-            canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if (isTouching && e.touches.length > 0) { touchX = e.touches[0].clientX; handleTouchMove(touchX); } }, { passive: false });
-            canvas.addEventListener('touchend', () => { isTouching = false; }); canvas.addEventListener('touchcancel', () => { isTouching = false; });
+            const keys = { ArrowLeft: false, ArrowRight: false }; 
+            let isTouching = false; 
+            let touchX = 0;
+            let threeAnimFrameId = null;
+            let lastTime = performance.now();
+            
+            // Key events
+            window.addEventListener('keydown', (e) => { 
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = true; 
+            });
+            
+            window.addEventListener('keyup', (e) => { 
+                if (keys.hasOwnProperty(e.key)) keys[e.key] = false; 
+            });
+            
+            // Movement handler
+            function handleMovement(clientX) {
+                // Adjust for any potential canvas offsets
+                const canvasRect = canvas.getBoundingClientRect();
+                const touchXRelative = clientX - canvasRect.left;
+                
+                // Move the rectangle
+                let newRectX = touchXRelative - playerRect.width / 2;
+                playerRect.x = Math.max(0, Math.min(newRectX, canvasWidth - playerRect.width));
+            }
+            
+            // Setup all input handlers for SmartBoard compatibility
+            function setupTouchEvents() {
+                // Remove existing event listeners first to avoid duplicates
+                canvas.removeEventListener('touchstart', handleTouchStart);
+                canvas.removeEventListener('touchmove', handleTouchMove);
+                canvas.removeEventListener('touchend', handleTouchEnd);
+                canvas.removeEventListener('touchcancel', handleTouchEnd);
+                
+                // Add both touch and pointer events for wider compatibility
+                canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+                canvas.addEventListener('touchend', handleTouchEnd);
+                canvas.addEventListener('touchcancel', handleTouchEnd);
+                
+                // Add pointer events for SmartBoard compatibility
+                canvas.addEventListener('pointerdown', handlePointerStart);
+                canvas.addEventListener('pointermove', handlePointerMove);
+                canvas.addEventListener('pointerup', handlePointerEnd);
+                canvas.addEventListener('pointercancel', handlePointerEnd);
+                
+                // Mouse events as fallback
+                canvas.addEventListener('mousedown', handleMouseStart);
+                canvas.addEventListener('mousemove', handleMouseMove);
+                canvas.addEventListener('mouseup', handleMouseEnd);
+            }
+
+            // Touch event handlers
+            function handleTouchStart(e) {
+                // Only prevent default for mobile devices, not for SmartBoards
+                if (isMobileDevice() && !isSmartBoard()) {
+                    e.preventDefault();
+                }
+                
+                if (e.touches.length > 0) {
+                    isTouching = true;
+                    touchX = e.touches[0].clientX;
+                    handleMovement(touchX);
+                }
+                
+                if (isMobileDevice() && !fullscreenRequested) {
+                    goFullScreen();
+                }
+            }
+
+            function handleTouchMove(e) {
+                // Only prevent default for mobile devices, not for SmartBoards
+                if (isMobileDevice() && !isSmartBoard()) {
+                    e.preventDefault();
+                }
+                
+                if (isTouching && e.touches.length > 0) {
+                    touchX = e.touches[0].clientX;
+                    handleMovement(touchX);
+                }
+            }
+
+            function handleTouchEnd() {
+                isTouching = false;
+            }
+
+            // Pointer event handlers (especially for SmartBoards)
+            function handlePointerStart(e) {
+                isTouching = true;
+                touchX = e.clientX;
+                handleMovement(touchX);
+                
+                if (isMobileDevice() && !fullscreenRequested) {
+                    goFullScreen();
+                }
+            }
+
+            function handlePointerMove(e) {
+                if (isTouching) {
+                    touchX = e.clientX;
+                    handleMovement(touchX);
+                }
+            }
+
+            function handlePointerEnd() {
+                isTouching = false;
+            }
+
+            // Mouse event handlers (fallback)
+            function handleMouseStart(e) {
+                isTouching = true;
+                touchX = e.clientX;
+                handleMovement(touchX);
+            }
+
+            function handleMouseMove(e) {
+                if (isTouching) {
+                    touchX = e.clientX;
+                    handleMovement(touchX);
+                }
+            }
+
+            function handleMouseEnd() {
+                isTouching = false;
+            }
             
             // --- Modified: New Game Button now resets the game with same students ---
             newGameBtn.addEventListener('click', () => {
@@ -1361,6 +1480,7 @@
             // --- Initialization ---
             function init() {
                 setupThreeScene();
+				setupTouchEvents(); // Initialize the touch events
                 
                 window.addEventListener('resize', () => {
                     canvasWidth = window.innerWidth;
